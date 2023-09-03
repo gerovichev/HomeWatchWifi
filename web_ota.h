@@ -58,7 +58,7 @@ void update_ota() {
     ESPhttpUpdate.onProgress(update_progress);
     ESPhttpUpdate.onError(update_error);
 
-    String path = webOTA_updateURL + "?MAC=" + macAddrSt + "&hst=" + hostname_m + "&ip=" + ip;
+    String path = webOTA_updateURL + "?MAC=" + macAddrSt + "&hst=" + hostname_m + "&ip=" + ip + "&ver=" + version_prg;
     
     Serial.println("Calling: " + path);
 
