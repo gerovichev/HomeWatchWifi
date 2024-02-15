@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 #include <WifiLocation.h>
 //#include <bingMapsGeocoding.h>
 #include <ArduinoJson.h>
