@@ -11,7 +11,7 @@ unsigned int sunset;
 
 #include "max72xx.h"
 
-String version_prg = "030923";
+String version_prg = "150224";
 
 char grad = '\xB0';  //247;
 
