@@ -3,13 +3,17 @@
 #include <WiFiClientSecureBearSSL.h>
 //#include "global.h"
 
-float data_ILS_value;
+float data_USD_value;
+float data_EUR_value;
+
 time_t timeLastCallCurrency;
 
 float tolerance = 0.0001; // Define a tolerance for comparisons
 
-void readCurrency() {
+float readCurrency(String path) {
   Serial.println("Start get Currency");
+
+  float data_ILS_value;
 
   if ((timeLastCallCurrency + 1 * 60 * 60 < timeNow) || (fabs(data_ILS_value - 0.0) < tolerance)) {
 
@@ -21,9 +25,9 @@ void readCurrency() {
 
     HTTPClient http;  //Declare an object of class HTTPClient
 
-    Serial.println(pathCurrency);
+    Serial.println(path);
 
-    http.begin(client, pathCurrency);
+    http.begin(client, path);
     // Set the Bearer token
     String authorizationHeader = "Bearer " + bearerTokenCurrency;
     http.setAuthorization("");
@@ -48,7 +52,7 @@ void readCurrency() {
       if (error) {
         Serial.print(F("deserializeJson() failed: "));
         Serial.println(error.f_str());
-        return;
+        return 0.0;
       }
       data_ILS_value = doc["state"];
 
@@ -58,17 +62,26 @@ void readCurrency() {
 
     http.end();  //Close connection
   }
+
+  return data_ILS_value;
 }
 
-void printCurrencyToScreen() {
+void printCurrencyUSDToScreen() {
 
-  String tape = "1$ = " + String(data_ILS_value, 2);
+  String tape = "1$ = " + String(data_USD_value, 2);
   int mv = 5 - tape.length();
   drawString(tape, mv);
 }
 
+void printCurrencyEURToScreen() {
 
+  String tape = "1EUR = " + String(data_EUR_value, 2);
+  int mv = 5 - tape.length();
+  drawString(tape, mv);
+}
 
 void currency_init() {
-  readCurrency();
+  data_USD_value = readCurrency(pathCurrencyUSD);
+
+  data_EUR_value = readCurrency(pathCurrencyEUR);
 }

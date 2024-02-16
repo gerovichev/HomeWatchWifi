@@ -90,7 +90,9 @@ void loop() {
 
     readWeather();
 
-    readCurrency();
+    data_USD_value = readCurrency(pathCurrencyUSD);
+
+    data_EUR_value = readCurrency(pathCurrencyEUR);
 
 
     setIntensityByTime(timeNow);

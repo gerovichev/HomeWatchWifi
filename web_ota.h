@@ -62,7 +62,7 @@ void update_ota() {
     
     Serial.println("Calling: " + path);
 
-    t_httpUpdate_return ret = ESPhttpUpdate.update(client, path);
+    t_httpUpdate_return ret = ESPhttpUpdate.update(client, path, version_prg);
 
     Serial.printf("returned code %d\n", ret);
 

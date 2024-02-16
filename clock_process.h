@@ -75,15 +75,18 @@ void clock_loop() {
           printDescriptionWeatherToScreen();
           break;
         case 15:
-          printCurrencyToScreen();
+          printCurrencyUSDToScreen();
+          break;
+        case 17:
+          printCurrencyEURToScreen();
           if (!IS_DHT_CONNECTED) {
             stop_loop = true;
           }
           break;
-        case 17:
+        case 19:
           printHomeTemp();
           break;
-        case 19:
+        case 21:
           printHumidity();
           stop_loop = true;
           break;
@@ -96,7 +99,7 @@ void clock_loop() {
 
     clock_counter++;
 
-    if (stop_loop || clock_counter > 20) {
+    if (stop_loop || clock_counter > 21) {
       clock_counter = 0;
     }
 
