@@ -40,6 +40,8 @@ void ICACHE_RAM_ATTR TimerHandler() {
 void clock_loop() {
 
   if (runClock) {
+    
+    runClock = false;
 
     bool stop_loop = false;
 
@@ -94,6 +96,7 @@ void clock_loop() {
           stop_loop = true;
 
           break;
+
       }
     }
 
@@ -102,13 +105,13 @@ void clock_loop() {
     if (stop_loop || clock_counter > 21) {
       clock_counter = 0;
     }
+    
 
-    runClock = false;
   }
 }
 
 void init_clock_process() {
-  ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 5000, TimerHandler);
+  ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 7000, TimerHandler);
 }
 
 void detachInterrupt_clock_process() {

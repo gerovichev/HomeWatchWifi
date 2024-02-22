@@ -1,5 +1,5 @@
 #include "global.h"
-#include "max72xx.h"
+#include "led.h"
 #include "wifimanager.h"
 #include "geo_place.h"
 #include "ntp_g.h"
@@ -23,15 +23,19 @@ void setup() {
 
   initPerDevice();
 
-  drawString("Hello " + nameofWatch, 0);
+  printText("Hello " + nameofWatch);
+  delay(1500);
+
+  printText(version_prg);
+  delay(2000);
+
+  printText("Connect WIFI");
   delay(500);
-  drawString(version_prg, 0);
-  delay(500);
-  drawString("Connect WIFI", 0);
+
   wifi_init();
 
-  drawString(WiFi.localIP().toString(), 0);
-  delay(500);
+  printText(WiFi.localIP().toString());
+  delay(1500);
 
   location_init();
   delay(500);
@@ -39,7 +43,7 @@ void setup() {
   ntp_init();
 
   //weather_init();
-  delay(500);
+  //delay(500);
 
   dht22Start();
 
@@ -50,15 +54,11 @@ void setup() {
 
   webserver_init();
 
-
-
-  drawString("Start", 0);
-
-
+  printText("Start");
 
 
   timeNow = timeClient.getEpochTime();
-  //setIntensityByTime(timeNow);
+
   isRunWeather = true;
 
   init_clock_process();
@@ -102,4 +102,7 @@ void loop() {
   }
 
   webClientHandle();
+
+  realDisplayText();
+
 }

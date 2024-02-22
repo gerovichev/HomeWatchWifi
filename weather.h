@@ -1,7 +1,7 @@
 #pragma once
 
 #include <WiFiClientSecureBearSSL.h>
-//#include "global.h"
+#include "global.h"
 
 unsigned int temperature;
 

@@ -9,17 +9,17 @@ String lang_weather;
 unsigned int sunrise;
 unsigned int sunset;
 
-#include "max72xx.h"
+#include "led.h"
 
-String version_prg = "160224";
+String version_prg = "200224";
 
-char grad = '\xB0';  //247;
+char grad = '\x60';  //247;
 
 char getGradValue() {
 
-  if (lang_weather.compareTo("en") == 0) {
+  /*if (lang_weather.compareTo("en") == 0) {
     grad = 176;  //;248
-  }
+  }*/
   return grad;
 }
 

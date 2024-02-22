@@ -68,14 +68,14 @@ float readCurrency(String path) {
 
 void printCurrencyUSDToScreen() {
 
-  String tape = "1$ = " + String(data_USD_value, 2);
+  String tape = "$ " + String(data_USD_value, 2);
   int mv = 5 - tape.length();
   drawString(tape, mv);
 }
 
 void printCurrencyEURToScreen() {
 
-  String tape = "1EUR = " + String(data_EUR_value, 2);
+  String tape = "\x84 " + String(data_EUR_value, 2);
   int mv = 5 - tape.length();
   drawString(tape, mv);
 }

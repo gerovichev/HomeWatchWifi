@@ -16,16 +16,16 @@ ESP8266WiFiMulti WiFiMulti;
 
 void update_started() {
   Serial.println("CALLBACK:  HTTP update process started");
-  drawString("Update", 0);
+  printText("Update");
 }
 
 void update_finished() {
   Serial.println("CALLBACK:  HTTP update process finished");
-  drawString("Restart", 0);
+  printText("Restart");
 }
 
 void update_progress(int cur, int total) {
-  drawString(String((cur / (total / 100)), DEC) + " %", 0);
+  printText(String((cur / (total / 100)), DEC) + " %");
   Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
 }
 

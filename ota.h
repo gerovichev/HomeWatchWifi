@@ -21,16 +21,16 @@ void ota_init() {
     detachInterrupt_clock_process();
 
     // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    drawString("Update", 0);
+    printText("Update");
     Serial.println("Start updating " + type);
   });
   ArduinoOTA.onEnd([]() {
-    drawString("Restart", 0);
+    printText("Restart");
     Serial.println("\nEnd");
     ESP.restart();
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    drawString(String((progress / (total / 100)), DEC) + " %", 0);
+    printText(String((progress / (total / 100)), DEC) + " %");
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
   });
   ArduinoOTA.onError([](ota_error_t error) {
