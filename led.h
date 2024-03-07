@@ -119,7 +119,7 @@ void realDisplayText() {
 void matrixSetup() {
   M.begin();
   M.setFont(CRMrusTxt);
-  M.setIntensity(1);
+  M.setIntensity(0);
 }
 
 void printText(String text) {

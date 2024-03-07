@@ -67,21 +67,28 @@ float readCurrency(String path) {
 }
 
 void printCurrencyUSDToScreen() {
-
-  String tape = "$ " + String(data_USD_value, 2);
-  int mv = 5 - tape.length();
-  drawString(tape, mv);
+  if (data_USD_value > 0) {
+    String tape = "$ " + String(data_USD_value, 2);
+    int mv = 5 - tape.length();
+    drawString(tape, mv);
+  }
 }
 
 void printCurrencyEURToScreen() {
-
-  String tape = "\x84 " + String(data_EUR_value, 2);
-  int mv = 5 - tape.length();
-  drawString(tape, mv);
+  if (data_EUR_value > 0) {
+    String tape = "\x84 " + String(data_EUR_value, 2);
+    int mv = 5 - tape.length();
+    drawString(tape, mv);
+  }
 }
 
 void currency_init() {
-  data_USD_value = readCurrency(pathCurrencyUSD);
 
-  data_EUR_value = readCurrency(pathCurrencyEUR);
+  float tmp_data_usd = readCurrency(pathCurrencyUSD);
+
+  if (tmp_data_usd > 0) data_USD_value = tmp_data_usd;
+
+  float tmp_data_eur = readCurrency(pathCurrencyEUR);
+
+  if (tmp_data_eur > 0) data_EUR_value = tmp_data_eur;
 }

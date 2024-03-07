@@ -181,17 +181,19 @@ void ssdp_init() {
 
 
 void webserver_init() {
+  if (isWebClientNeeded) {
 
-  ssdp_init();
+    ssdp_init();
 
-  webServer.on("/time", handleTime);
-  webServer.on("/restart", handleRestart);
-  webServer.on("/led", handleLed);
-  webServer.on("/wifireset", wifiReset);
-  webServer.on("/temperature", getTemperature);
-  webServer.on("/", handleRoot);
-  webServer.onNotFound(handleNotFound);
-  webServer.begin();
+    webServer.on("/time", handleTime);
+    webServer.on("/restart", handleRestart);
+    webServer.on("/led", handleLed);
+    webServer.on("/wifireset", wifiReset);
+    webServer.on("/temperature", getTemperature);
+    webServer.on("/", handleRoot);
+    webServer.onNotFound(handleNotFound);
+    webServer.begin();
+  }
 }
 
 void webClientHandle() {

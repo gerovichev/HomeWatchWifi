@@ -48,7 +48,7 @@ void setup() {
   dht22Start();
 
   if (isOTAreq) {
-    update_ota();
+    //update_ota();
     ota_init();
   }
 
@@ -90,10 +90,7 @@ void loop() {
 
     readWeather();
 
-    data_USD_value = readCurrency(pathCurrencyUSD);
-
-    data_EUR_value = readCurrency(pathCurrencyEUR);
-
+    currency_init();
 
     setIntensityByTime(timeNow);
 
