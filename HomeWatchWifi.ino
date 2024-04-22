@@ -65,7 +65,7 @@ void setup() {
 }
 
 void loop() {
-  //verifyWifi();
+  verifyWifi();
   timeClient.update();
   timeNow = timeClient.getEpochTime() - offset;
   // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy

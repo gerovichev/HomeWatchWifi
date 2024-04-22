@@ -30,7 +30,8 @@ void readWeather() {
 
   HTTPClient http;  //Declare an object of class HTTPClient
 
-  String path = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 2) + "&lon=" + String(longitude, 2) + "&units=metric&appid=" + appidWeather + "&lang=" + lang_weather;  //ru
+  String path = "https://api.openweathermap.org/data/3.0/onecall?lat=" + String(latitude, 2) + "&lon=" + String(longitude, 2) 
+                + "&units=metric&exclude=minutely,hourly,daily,alerts&appid=" + appidWeather + "&lang=" + lang_weather;  //ru
 
 
   Serial.println(path);
@@ -53,6 +54,41 @@ void readWeather() {
     DeserializationError error = deserializeJson(doc, payload);
     // Test if parsing succeeds.
     if (!error) {
+//float lat = doc["lat"]; // 31.65
+//float lon = doc["lon"]; // 34.56
+//const char* timezone = doc["timezone"]; // "Asia/Jerusalem"
+//int timezone_offset = doc["timezone_offset"]; // 10800
+
+JsonObject current = doc["current"];
+//long current_dt = current["dt"]; // 1713606424
+      sunrise = current["sunrise"]; // 1713582434
+      sunset = current["sunset"]; // 1713629616
+
+      float current_temp = current["temp"]; // 24.32
+      temperature = (int)floor(current_temp + 0.5);
+      float current_feels_like = current["feels_like"]; // 24.17
+      temp_max = (int)floor(current_feels_like + 0.5);
+      int current_pressure = current["pressure"]; // 1012
+      pressure = current_pressure * 0.75006375541921;
+      main_ext_humidity = current["humidity"]; // 52
+/*float current_dew_point = current["dew_point"]; // 13.84
+float current_uvi = current["uvi"]; // 7.92
+int current_clouds = current["clouds"]; // 88
+int current_visibility = current["visibility"]; // 10000
+float current_wind_speed = current["wind_speed"]; // 3.85
+int current_wind_deg = current["wind_deg"]; // 322
+float current_wind_gust = current["wind_gust"]; // 2.94
+*/
+
+      JsonObject current_weather_0 = current["weather"][0];
+      const char* current_weather_0_description = current_weather_0["description"]; // "overcast clouds"
+      description_weather = String(current_weather_0_description);
+
+
+
+
+
+/*
       JsonObject root = doc.as<JsonObject>();
 
       //DynamicJsonBuffer jsonBuffer(500);
@@ -76,7 +112,9 @@ void readWeather() {
       description_weather = String(description_weather_ch);
 
       sunrise = root["sys"]["sunrise"];
-      sunset = root["sys"]["sunset"];
+      sunset = root["sys"]["sunset"];*/
+
+
     } else {
       drawString("No weather", 0);
       //delay(500);
@@ -111,7 +149,7 @@ void printMaxTempToScreen() {
       delay(1000);
     }*/
 
-  String tape = "Max temp: " + String(temp_max, DEC) + getGradValue() + "C";  //247
+  String tape = "Feels like: " + String(temp_max, DEC) + getGradValue() + "C";  //247
   drawString(tape, 0);
 }
 

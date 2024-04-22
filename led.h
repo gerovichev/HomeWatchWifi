@@ -107,9 +107,11 @@ void realDisplayText() {
       M.displayReset();
 
       Serial.println(dataTmp);
-      M.displayClear();
-      if (strlen(dataTmp) > 5)
+      //M.displayClear();
+      if (strlen(dataTmp) > 5) {
+        M.displayClear();
         M.displayText(dataTmp, PA_LEFT, 50, 1000, PA_SCROLL_LEFT, PA_NO_EFFECT);
+      }
       else
         M.displayText(dataTmp, PA_CENTER, 100, 1000, PA_PRINT, PA_NO_EFFECT);
     }
