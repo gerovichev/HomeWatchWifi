@@ -22,7 +22,7 @@ bool isRunWeather = false;
 int countWeather = 0;
 
 void isNeedRunWeather() {
-  if (countWeather >= 15 * 12) {
+  if (countWeather >= 15 * 10) {
     countWeather = 0;
     isRunWeather = true;
   }

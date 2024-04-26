@@ -118,6 +118,11 @@ void realDisplayText() {
   }
 }
 
+bool displayAnimate()
+{
+  return M.displayAnimate();
+}
+
 void matrixSetup() {
   M.begin();
   M.setFont(CRMrusTxt);

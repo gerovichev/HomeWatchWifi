@@ -65,41 +65,42 @@ void setup() {
 }
 
 void loop() {
-  verifyWifi();
-  timeClient.update();
-  timeNow = timeClient.getEpochTime() - offset;
-  // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
-  // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
-  //delay(1000);
 
-  clock_loop();
+    verifyWifi();
+    timeClient.update();
+    timeNow = timeClient.getEpochTime() - offset;
+    // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
+    // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
+    //delay(1000);
+
+    clock_loop();
+
+  if (!6666displayAnimate()) {
+    if (isRunWeather) {
+      detachInterrupt_clock_process();
+
+      Serial.println(timeClient.getEpochTime());  // dd. Mmm yyyy
 
 
-  if (isRunWeather) {
-    detachInterrupt_clock_process();
+      getTimezone();
 
-    Serial.println(timeClient.getEpochTime());  // dd. Mmm yyyy
+      if (isOTAreq) {
+        ArduinoOTA.handle();
+        update_ota();
+      }
 
+      readWeather();
 
-    getTimezone();
+      currency_init();
 
-    if (isOTAreq) {
-      ArduinoOTA.handle();
-      update_ota();
+      setIntensityByTime(timeNow);
+
+      isRunWeather = false;
+      init_clock_process();
     }
 
-    readWeather();
-
-    currency_init();
-
-    setIntensityByTime(timeNow);
-
-    isRunWeather = false;
-    init_clock_process();
+    webClientHandle();
   }
 
-  webClientHandle();
-
   realDisplayText();
-
 }

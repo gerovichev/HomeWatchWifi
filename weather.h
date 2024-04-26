@@ -149,7 +149,7 @@ void printMaxTempToScreen() {
       delay(1000);
     }*/
 
-  String tape = "Feels like: " + String(temp_max, DEC) + getGradValue() + "C";  //247
+  String tape = "Feels like " + String(temp_max, DEC) + getGradValue() + "C";  //247
   drawString(tape, 0);
 }
 
