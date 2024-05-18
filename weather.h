@@ -116,7 +116,7 @@ float current_wind_gust = current["wind_gust"]; // 2.94
 
 
     } else {
-      drawString("No weather", 0);
+      //drawString("No weather", 0);
       //delay(500);
     }
 

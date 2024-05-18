@@ -140,7 +140,7 @@ void getLocationAPI(String ip) {
   Serial.println("Result: " + location.wlStatusStr(location.getStatus()));
   if (!location.wlStatusStr(location.getStatus()).equals("OK")) {
     Serial.println("Returned status not OK");
-    ESP.restart();
+    //ESP.restart();
     //return getLocationAPI();
   }
   Serial.println("Location request data");
@@ -204,7 +204,7 @@ String getIp() {
   } else {
     Serial.print("Returned status not OK: ");
     Serial.println(httpCode);
-    ESP.restart();
+    //ESP.restart();
   }
 
   http.end();  //Close connection

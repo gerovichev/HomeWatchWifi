@@ -19,9 +19,11 @@ void setup() {
 
   Serial.println("Start ...");
 
-  matrixSetup();
+
 
   initPerDevice();
+
+  matrixSetup();
 
   printText("Hello " + nameofWatch);
   delay(1500);
@@ -44,7 +46,7 @@ void setup() {
 
   //weather_init();
   //delay(500);
-
+  //printText("Start");
   dht22Start();
 
   if (isOTAreq) {
@@ -54,7 +56,7 @@ void setup() {
 
   webserver_init();
 
-  printText("Start");
+  //printText("Start 1");
 
 
   timeNow = timeClient.getEpochTime();
@@ -62,21 +64,31 @@ void setup() {
   isRunWeather = true;
 
   init_clock_process();
+
+  //printText("Start 2");
+
+  printCityToScreen();
+  //drawStringMax("Start", 0);
 }
 
 void loop() {
 
-    verifyWifi();
-    timeClient.update();
-    timeNow = timeClient.getEpochTime() - offset;
-    // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
-    // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
-    //delay(1000);
+  realDisplayText();
 
-    clock_loop();
+  verifyWifi();
+  timeClient.update();
+  timeNow = timeClient.getEpochTime() - offset;
+  // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
+  // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
+  //delay(1000);
 
-  if (!6666displayAnimate()) {
+  clock_loop();
+
+  if (!displayAnimate()) {
     if (isRunWeather) {
+
+      printTimeToScreen();
+
       detachInterrupt_clock_process();
 
       Serial.println(timeClient.getEpochTime());  // dd. Mmm yyyy
@@ -101,6 +113,4 @@ void loop() {
 
     webClientHandle();
   }
-
-  realDisplayText();
 }

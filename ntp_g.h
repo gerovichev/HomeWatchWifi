@@ -99,7 +99,7 @@ void getTimezone() {
     Serial.println(httpCode);
 
     //drawString("No timezone 2", 0);
-    ESP.restart();
+    //ESP.restart();
   }
 
   http.end();  //Close connection

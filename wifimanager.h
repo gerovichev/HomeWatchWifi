@@ -40,7 +40,7 @@ void wifi_init() {
 
   if (!res) {
     Serial.println("Failed to connect or hit timeout");
-    ESP.restart();
+    //ESP.restart();
   } else {
     //WiFi.mode(WIFI_STA);
 

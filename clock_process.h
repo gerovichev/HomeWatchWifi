@@ -22,8 +22,9 @@ bool isRunWeather = false;
 int countWeather = 0;
 
 void isNeedRunWeather() {
-  if (countWeather >= 15 * 10) {
+  if (countWeather >= 15 * 16) {
     countWeather = 0;
+    clock_counter = 0;
     isRunWeather = true;
   }
   countWeather++;
@@ -111,7 +112,7 @@ void clock_loop() {
 }
 
 void init_clock_process() {
-  ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 7000, TimerHandler);
+  ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 5000, TimerHandler);
 }
 
 void detachInterrupt_clock_process() {

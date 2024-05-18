@@ -57,7 +57,8 @@ float readCurrency(String path) {
       data_ILS_value = doc["state"];
 
     } else {
-      drawString("No Currency - " + String(httpCode, DEC), 0);
+      Serial.println("No Currency - " + String(httpCode, DEC));
+      //drawString("No Currency - " + String(httpCode, DEC), 0);
     }
 
     http.end();  //Close connection
