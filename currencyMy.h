@@ -45,7 +45,7 @@ float readCurrency(String path) {
       Serial.println("payload length: ");
       Serial.println(payload.length());
 
-      StaticJsonDocument<800> doc;
+      JsonDocument doc;
 
       DeserializationError error = deserializeJson(doc, payload);
 

@@ -9,6 +9,9 @@
 #include "ota.h"
 #include "clock_process.h"
 #include "webclient.h"
+#include <Ticker.h>
+
+Ticker updateDataTicker;
 
 void setup() {
 
@@ -68,34 +71,31 @@ void setup() {
   //printText("Start 2");
 
   printCityToScreen();
+
+  // Set up Ticker to update weather and currency every hour (3600 seconds)
+  updateDataTicker.attach(900, runAllUpdates);
   //drawStringMax("Start", 0);
+
+  // Initial data fetch
+  fetchWeatherAndCurrency();
 }
 
-void loop() {
+void runAllUpdates()
+{
+  isRunWeather = true;
+}
 
-  realDisplayText();
+void fetchWeatherAndCurrency()
+{
 
-  verifyWifi();
-  timeClient.update();
-  timeNow = timeClient.getEpochTime() - offset;
-  // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
-  // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
-  //delay(1000);
-
-  clock_loop();
-
-  if (!displayAnimate()) {
-    if (isRunWeather) {
-
-      printTimeToScreen();
-
+Serial.println("Start detach");
       detachInterrupt_clock_process();
-
-      Serial.println(timeClient.getEpochTime());  // dd. Mmm yyyy
+Serial.println("Detached");
+      Serial.println("Time: " + timeClient.getEpochTime());  // dd. Mmm yyyy
 
 
       getTimezone();
-
+Serial.println("Get time zone finished");
       if (isOTAreq) {
         ArduinoOTA.handle();
         update_ota();
@@ -109,8 +109,30 @@ void loop() {
 
       isRunWeather = false;
       init_clock_process();
-    }
+}
 
-    webClientHandle();
+void loop() {
+
+
+
+  verifyWifi();
+
+
+  if (!displayAnimate()) {
+    if (isRunWeather) {
+      fetchWeatherAndCurrency();
+      //printTimeToScreen();
+    }
   }
+
+  realDisplayText();
+  timeClient.update();
+  timeNow = timeClient.getEpochTime() - offset;
+  // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
+  // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
+  //delay(1000);
+
+  clock_loop();
+
+  webClientHandle();
 }

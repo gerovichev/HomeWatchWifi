@@ -33,9 +33,9 @@ void isNeedRunWeather() {
 }
 
 //=======================================================================
-void ICACHE_RAM_ATTR TimerHandler() {
+void IRAM_ATTR TimerHandler() {
   runClock = true;
-  isNeedRunWeather();
+  //isNeedRunWeather();
 }
 
 void clock_loop() {

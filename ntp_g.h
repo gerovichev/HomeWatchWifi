@@ -61,7 +61,7 @@ void getTimezone() {
 
     Serial.println(payload);
 
-    DynamicJsonDocument doc(payload.length() * 2);
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload);
 
     // Test if parsing succeeds.

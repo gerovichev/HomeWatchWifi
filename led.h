@@ -16,8 +16,11 @@ void setIntensity(byte intensity);
 #define MAX_DEVICES 4
 
 #define CLK_PIN 14
+// - d5
 #define DATA_PIN 13
+// - d7
 #define CS_PIN 5
+// - d1
 
 #define LED_MAX_BUF 512  // Размер буфера LED
 
@@ -94,10 +97,11 @@ void drawStringMax(String tape, int start) {
   newMessageAvailable = true;
 }
 
-char dataTmp[LED_MAX_BUF];
+#define SCROLL_SPEED 50
+#define PAUSE_TIME 1000
 
 void realDisplayText() {
-
+  static char dataTmp[LED_MAX_BUF]; // Use static to maintain the buffer state between calls
 
   if (M.displayAnimate()) {
     if (newMessageAvailable) {
@@ -105,15 +109,15 @@ void realDisplayText() {
       memset(dataTmp, '\0', LED_MAX_BUF);
       strcpy(dataTmp, data);
       M.displayReset();
-
       Serial.println(dataTmp);
-      //M.displayClear();
+
+      M.displayClear(); // Clear the display before setting new text
+
       if (strlen(dataTmp) > 5) {
-        M.displayClear();
-        M.displayText(dataTmp, PA_LEFT, 50, 1000, PA_SCROLL_LEFT, PA_NO_EFFECT);
+        M.displayText(dataTmp, PA_LEFT, SCROLL_SPEED, PAUSE_TIME, PA_SCROLL_LEFT, PA_NO_EFFECT);
+      } else {
+        M.displayText(dataTmp, PA_CENTER, SCROLL_SPEED, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
       }
-      else
-        M.displayText(dataTmp, PA_CENTER, 100, 1000, PA_PRINT, PA_NO_EFFECT);
     }
   }
 }
@@ -125,6 +129,9 @@ bool displayAnimate()
 
 void matrixSetup() {
   M.begin();
+  M.displayClear();
+  M.displaySuspend(false);
+  M.setInvert(false);
   M.setFont(CRMrusTxt);
   M.setIntensity(0);
 }

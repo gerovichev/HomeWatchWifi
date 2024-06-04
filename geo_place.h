@@ -37,7 +37,7 @@ void loadConfiguration() {
     // Allocate a temporary JsonDocument
     // Don't forget to change the capacity to match your requirements.
     // Use arduinojson.org/v6/assistant to compute the capacity.
-    StaticJsonDocument<512> doc;
+    JsonDocument doc;
 
     // Deserialize the JSON document
     DeserializationError error = deserializeJson(doc, file);
@@ -88,7 +88,7 @@ void saveConfiguration() {
   // Allocate a temporary JsonDocument
   // Don't forget to change the capacity to match your requirements.
   // Use arduinojson.org/assistant to compute the capacity.
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
 
   // Set the values in the document
   doc["latitude"] = config.latitude;

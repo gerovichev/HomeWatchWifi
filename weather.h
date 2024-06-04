@@ -37,7 +37,7 @@ void readWeather() {
   Serial.println(path);
 
   http.begin(client, path);
-
+Serial.println("Start weather");
   //http.begin(path);
 
   //http.begin(path, "EE AA 58 6D 4F 1F 42 F4 18 5B 7F B0 F2 0A 4C DD 97 47 7D 99");
@@ -50,7 +50,7 @@ void readWeather() {
     Serial.println("payload: ");
     Serial.println(payload);
 
-    DynamicJsonDocument doc(payload.length() * 2);
+    JsonDocument  doc;
     DeserializationError error = deserializeJson(doc, payload);
     // Test if parsing succeeds.
     if (!error) {
@@ -116,12 +116,14 @@ float current_wind_gust = current["wind_gust"]; // 2.94
 
 
     } else {
+      Serial.println("No weather 0 - " + String(httpCode, DEC));
       //drawString("No weather", 0);
       //delay(500);
     }
 
   } else {
-    drawString("No weather 1 - " + String(httpCode, DEC), 0);
+    Serial.println("No weather 1 - " + String(httpCode, DEC));
+    //drawString("No weather 1 - " + String(httpCode, DEC), 0);
     //delay(500);
   }
 
