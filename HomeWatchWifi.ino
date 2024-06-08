@@ -12,6 +12,7 @@
 #include <Ticker.h>
 
 Ticker updateDataTicker;
+bool isRunWeather = false;
 
 void setup() {
 
@@ -29,21 +30,21 @@ void setup() {
   matrixSetup();
 
   printText("Hello " + nameofWatch);
-  delay(1500);
+  //delay(1500);
 
   printText(version_prg);
-  delay(2000);
+  //delay(2000);
 
   printText("Connect WIFI");
-  delay(500);
+  //delay(500);
 
   wifi_init();
 
   printText(WiFi.localIP().toString());
-  delay(1500);
+  //delay(1500);
 
   location_init();
-  delay(500);
+  //delay(500);
 
   ntp_init();
 
@@ -78,61 +79,60 @@ void setup() {
 
   // Initial data fetch
   fetchWeatherAndCurrency();
+  //printText("Start");
 }
 
-void runAllUpdates()
-{
+void runAllUpdates() {
   isRunWeather = true;
 }
 
-void fetchWeatherAndCurrency()
-{
+void fetchWeatherAndCurrency() {
+  if (isRunWeather) {
+    Serial.println("Start detach");
+    detachInterrupt_clock_process();
+    Serial.println("Detached");
+    Serial.println("Time: " + timeClient.getEpochTime());  // dd. Mmm yyyy
 
-Serial.println("Start detach");
-      detachInterrupt_clock_process();
-Serial.println("Detached");
-      Serial.println("Time: " + timeClient.getEpochTime());  // dd. Mmm yyyy
 
+    getTimezone();
+    Serial.println("Get time zone finished");
+    if (isOTAreq) {
+      ArduinoOTA.handle();
+      update_ota();
+    }
 
-      getTimezone();
-Serial.println("Get time zone finished");
-      if (isOTAreq) {
-        ArduinoOTA.handle();
-        update_ota();
-      }
+    readWeather();
 
-      readWeather();
+    currency_init();
 
-      currency_init();
+    setIntensityByTime(timeNow);
 
-      setIntensityByTime(timeNow);
-
-      isRunWeather = false;
-      init_clock_process();
+    isRunWeather = false;
+    init_clock_process();
+  }
 }
 
 void loop() {
 
+  //verifyWifi();
+
+  if (displayAnimate()) {
+    //Serial.println("displayAnimate() = true");
+
+    fetchWeatherAndCurrency();
+    //printTimeToScreen();
 
 
-  verifyWifi();
+    timeClient.update();
+    timeNow = timeClient.getEpochTime() - offset;
 
+    clock_loop();
 
-  if (!displayAnimate()) {
-    if (isRunWeather) {
-      fetchWeatherAndCurrency();
-      //printTimeToScreen();
-    }
+  } else {
+    //Serial.println("displayAnimate() = false");
   }
 
   realDisplayText();
-  timeClient.update();
-  timeNow = timeClient.getEpochTime() - offset;
-  // Serial.println(timeClient.formattedTime("%d. %B %Y")); // dd. Mmm yyyy
-  // Serial.println(timeClient.formattedTime("%A %T")); // Www hh:mm:ss
-  //delay(1000);
-
-  clock_loop();
 
   webClientHandle();
 }

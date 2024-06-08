@@ -3,21 +3,13 @@
 #include <WiFiClientSecureBearSSL.h>
 //#include "global.h"
 
-float data_USD_value;
-float data_EUR_value;
-
-time_t timeLastCallCurrency;
-
-float tolerance = 0.0001; // Define a tolerance for comparisons
+float data_USD_value = 0.0;
+float data_EUR_value = 0.0;
 
 float readCurrency(String path) {
   Serial.println("Start get Currency");
 
-  float data_ILS_value;
-
-  if ((timeLastCallCurrency + 1 * 60 * 60 < timeNow) || (fabs(data_ILS_value - 0.0) < tolerance)) {
-
-    timeLastCallCurrency = timeNow;
+  float data_ILS_value = 0.0;
 
     //std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
     BearSSL::WiFiClientSecure client;
@@ -62,7 +54,6 @@ float readCurrency(String path) {
     }
 
     http.end();  //Close connection
-  }
 
   return data_ILS_value;
 }
