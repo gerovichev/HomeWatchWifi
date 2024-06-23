@@ -1,24 +1,29 @@
 #pragma once
 
-#include <ESP8266TimerInterrupt.h>
+//#include <ESP8266TimerInterrupt.h>
 #include "weather.h"
 #include "dht22.h"
 #include "currencyMy.h"
+#include <Ticker.h>
 
 constexpr int TIMER_INTERVAL_MS = 1000;
 constexpr int DISPLAY_CYCLE_LENGTH = 21;
 
 // Init ESP8266 timer 0
-ESP8266Timer ITimer;
+//ESP8266Timer ITimer;
+
+
 
 class Clock {
 public:
     void init() {
-        ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 5000, TimerHandler);
+        //ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 5000, TimerHandler);
+        timer1.attach(5, TimerHandler);
     }
 
     void detach() {
-        ITimer.detachInterrupt();
+        timer1.detach();
+        //ITimer.detachInterrupt();
     }
 
     void loop() {
@@ -76,6 +81,7 @@ private:
     bool shouldStopLoop = false;
     int clockCounter = 0;
     static volatile bool runClock;
+    Ticker timer1;
 };
 
 Clock Clock::instance;

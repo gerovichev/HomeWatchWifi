@@ -11,7 +11,7 @@ unsigned int sunset;
 
 #include "led.h"
 
-String version_prg = "080624";
+String version_prg = "220624";
 
 char grad = '\x60';  //247;
 
@@ -28,6 +28,7 @@ float humidity_delta = 0.00;
 String hostname_m;
 
 boolean isOTAreq = true;
+boolean isMQTT = false;
 String nameofWatch;
 
 String macAddrSt;
@@ -40,10 +41,6 @@ boolean IS_DHT_CONNECTED = false;
 bool isWebClientNeeded = true;
 
 boolean isReadWeather = true;
-
-const int RED = 15;
-const int GREEN = 12;
-const int BLUE = 13;
 
 void initPerDevice() {
 
@@ -66,7 +63,9 @@ void initPerDevice() {
     humidity_delta = config.humidity_delta;
     nameofWatch = config.nameofWatch;
     isOTAreq = config.isOTAreq;
+    isMQTT = config.isMQTT;
     setIntensity(config.intensity);
+    mqtt_topic_str = hostname_m + mqtt_topic;
 
 
   } else {
@@ -110,3 +109,4 @@ String getNumberWithZerro(int dig) {
 void drawString(String tape, int start) {
   drawStringMax(tape, start);
 }
+

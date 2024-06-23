@@ -11,9 +11,10 @@ void drawString(String tape, int start);
 
 DHT_Unified dht(DHTPIN, DHTTYPE);
 
-float homeTemp;
-float homeHumidity;
+float homeTemp = 0.0;
+float homeHumidity = 0.0;
 
+void setHomeTemp();
 
 void dht22Start() {
   if (IS_DHT_CONNECTED) {
@@ -58,6 +59,19 @@ void dht22Start() {
     Serial.print(sensor.resolution);
     Serial.println("%");
     Serial.println("------------------------------------");
+    setHomeTemp();
+  }
+}
+
+void setHomeTemp() {
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    dht22Start();
+    //drawString("T error", 0);
+    Serial.println("Error reading temperature!");
+  } else {
+    homeTemp = event.temperature;
   }
 }
 

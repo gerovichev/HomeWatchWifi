@@ -7,6 +7,7 @@
 #include "fonts.h"
 #include "global.h"
 
+
 // Define the number of devices in the chain and the hardware interface
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
@@ -54,12 +55,31 @@ void setIntensity(byte intensity) {
   M.setIntensity(intensity);
 }
 
+// Function to convert time_t to a readable string format
+String formatTime(time_t rawTime) {
+  int hours = (rawTime % 86400L) / 3600;
+  int minutes = (rawTime % 3600) / 60;
+  int seconds = rawTime % 60;
+  
+  char timeStr[20];
+  sprintf(timeStr, "%02d:%02d:%02d", hours, minutes, seconds);
+  
+  return String(timeStr);
+}
+
 // Sets the intensity based on the current time
 void setIntensityByTime(time_t timeNow) {
   int intensity = (timeNow > sunrise && timeNow < sunset) ? 2 : 0;
+
+  Serial.println("sunrise: " + formatTime(sunrise)); 
+  Serial.println("Time: " + formatTime(timeNow));
+  Serial.println("sunset: " + formatTime(sunset));
+
   Serial.printf("intensity %d\n", intensity);
   M.setIntensity(intensity);
 }
+
+
 
 // Converts UTF-8 to Russian characters
 String utf2rus(const String& source) {
@@ -144,6 +164,7 @@ void matrixSetup() {
 
 // Prints the given text on the LED display
 void printText(String text) {
+  Serial.println(text);
   char dataText[LED_MAX_BUF];
   utf2rus("     " + text).toCharArray(dataText, LED_MAX_BUF);
 

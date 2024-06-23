@@ -11,49 +11,56 @@ float readCurrency(String path) {
 
   float data_ILS_value = 0.0;
 
-    //std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-    BearSSL::WiFiClientSecure client;
-    client.setInsecure();
+  //std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+  BearSSL::WiFiClientSecure client;
+  client.setInsecure();
 
-    HTTPClient http;  //Declare an object of class HTTPClient
+  HTTPClient http;  //Declare an object of class HTTPClient
 
-    Serial.println(path);
+  Serial.println(path);
+  Serial.println("currency 1");
+  if (!http.begin(client, path)) {
+    Serial.println("Failed to begin HTTP connection");
+    return 0.0;
+  }
 
-    http.begin(client, path);
+  Serial.println("currency 2");
     // Set the Bearer token
-    String authorizationHeader = "Bearer " + bearerTokenCurrency;
-    http.setAuthorization("");
-    http.addHeader("Authorization", authorizationHeader);
-    http.addHeader("Content-Type", "application/json");
+  String authorizationHeader = "Bearer " + bearerTokenCurrency;
+  Serial.println("currency 3");
+  http.setAuthorization("");
+  http.addHeader("Authorization", authorizationHeader);
+  http.addHeader("Content-Type", "application/json");
+  Serial.println("currency 4");
 
-    int httpCode = http.GET();  //Send the request
+  int httpCode = http.GET();  //Send the request
+  Serial.println("currency 5");
+  if (httpCode == HTTP_CODE_OK) {  //Check the returning code
+    Serial.println("currency 6");
+    String payload = http.getString();  //Get the request response payload
 
-    if (httpCode == HTTP_CODE_OK) {  //Check the returning code
+    Serial.println("payload: ");
+    Serial.println(payload);
+    Serial.println("payload length: ");
+    Serial.println(payload.length());
 
-      String payload = http.getString();  //Get the request response payload
+    JsonDocument doc;
 
-      Serial.println("payload: ");
-      Serial.println(payload);
-      Serial.println("payload length: ");
-      Serial.println(payload.length());
+    DeserializationError error = deserializeJson(doc, payload);
 
-      JsonDocument doc;
-
-      DeserializationError error = deserializeJson(doc, payload);
-
-      if (error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return 0.0;
-      }
-      data_ILS_value = doc["state"];
-
-    } else {
-      Serial.println("No Currency - " + String(httpCode, DEC));
-      //drawString("No Currency - " + String(httpCode, DEC), 0);
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return 0.0;
     }
+    data_ILS_value = doc["state"];
 
-    http.end();  //Close connection
+  } else {
+    Serial.println("No Currency - " + String(httpCode, DEC));
+    //drawString("No Currency - " + String(httpCode, DEC), 0);
+  }
+
+  http.end();  //Close connection
 
   return data_ILS_value;
 }

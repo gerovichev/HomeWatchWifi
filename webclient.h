@@ -1,8 +1,13 @@
 #pragma once
 
 #include <ESP8266SSDP.h>
+//#include "WiFiManagerWrapper.h"
 
 ESP8266WebServer webServer(80);
+
+const int RED = 15;
+const int GREEN = 12;
+const int BLUE = 13;
 
 void wifiReset() {
 
@@ -11,7 +16,8 @@ void wifiReset() {
   String message = "";
   int code = HTTP_CODE_OK;
 
-  wifi_reset();
+  wifi_init();
+  //wifiManagerWrapper.wifi_reset();
   // Prepare the response
   message = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nWifi reset \r\n";
   message += "</html>\n";
@@ -90,37 +96,82 @@ void handleTime() {
   webServer.send(200, "text/html", temp);
 }
 
+const char htmlPage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+    <meta http-equiv='refresh' content='5'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <title>ESP8266 Demo</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, Helvetica, Sans-Serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #007BFF;
+        }
+        p {
+            margin: 10px 0;
+        }
+        a {
+            color: #007BFF;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h1>Hello from ESP8266! %s - %s</h1>
+        <p>Uptime: %02d:%02d:%02d</p>
+        <p><a href='/time'>Time</a></p>
+        <p><a href='/restart'>Restart</a></p>
+        <p><a href='/wifireset'>WiFi Reset</a></p>
+        <p><a href='/led'>LED</a></p>
+    </div>
+</body>
+</html>
+)rawliteral";
+
+  // Get the size of the htmlPage
+  size_t htmlPageSize = strlen(htmlPage);
+
 void handleRoot() {
-  char temp[800];
+  char temp[htmlPageSize + 100];
   int sec = millis() / 1000;
   int min = sec / 60;
   int hr = min / 60;
 
-  snprintf(temp, 800,
 
-           "<?xml version='1.0' encoding='UTF-8'?>\
-              <!DOCTYPE html>\
-              <html xmlns='http://www.w3.org/1999/xhtml'>\
-             <head>\
-    <meta http-equiv='refresh' content='5'/>\
-    <title>ESP8266 Demo</title>\
-    <style>\
-      body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
-    </style>\
-  </head>\
-  <body>\
-    <div width='100%'>\
-    <h1>Hello from ESP8266! %s - %s</h1>\
-    <p>Uptime: %02d:%02d:%02d</p>\
-    <p><a href='/time'>time</a></p>\
-    <p><a href='/restart'>restart</a></p>\
-    <p><a href='/wifireset'>wifireset</a></p>\
-    <p><a href='/led'>led</a></p>\
-    </div>\
-  </body>\
-</html>",
-
-           hostname_m.c_str(), version_prg.c_str(), hr, min % 60, sec % 60);
+  snprintf(temp, htmlPageSize + 100, htmlPage, hostname_m.c_str(), version_prg.c_str(), hr, min % 60, sec % 60);
   webServer.sendHeader("Connection", "close");
   webServer.send(HTTP_CODE_OK, "text/html", temp);
 }

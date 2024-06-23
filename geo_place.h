@@ -194,7 +194,7 @@ String getIp() {
   //delay(1000);
 
   int httpCode = http.GET();  //Send the request
-  delay(500);
+  //delay(500);
 
   Serial.println("get ip ran");
 
@@ -204,7 +204,7 @@ String getIp() {
   } else {
     Serial.print("Returned status not OK: ");
     Serial.println(httpCode);
-    //ESP.restart();
+    ESP.restart();
   }
 
   http.end();  //Close connection
