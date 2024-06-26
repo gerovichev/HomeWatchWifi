@@ -3,10 +3,7 @@
 #include <DHT_U.h>
 #include "global.h"
 
-
-void drawString(String tape, int start);
-
-#define DHTPIN 12      //0         // Pin which is connected to the DHT sensor. D6
+#define DHTPIN 12      // Pin which is connected to the DHT sensor.
 #define DHTTYPE DHT22  // DHT 22 (AM2302)
 
 DHT_Unified dht(DHTPIN, DHTTYPE);

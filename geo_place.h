@@ -1,157 +1,235 @@
 #pragma once
 
 #include <WifiLocation.h>
+//#include <bingMapsGeocoding.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <ESP8266HTTPClient.h>
-#include <time.h>
 
 #include "global.h"
+
 
 String ip;
 float latitude = 31.66;
 float longitude = 34.56;
 
 struct Config {
-    float latitude;
-    float longitude;
-    String ip;
+  float latitude;
+  float longitude;
+  String ip;
+  //  String city_name;
 };
 
-const char* filenamecnf = "/config.txt";
-Config config;
+const char* filenamecnf = "/config.txt";  // <- SD library uses 8.3 filenames
+Config config;                            // <- global configuration object
 
 // Loads the configuration from a file
 void loadConfiguration() {
-    if (!LittleFS.begin()) {
-        Serial.println("Failed to mount file system");
-        return;
-    }
 
-    File file = LittleFS.open(filenamecnf, "r");
-    if (!file) {
-        Serial.println("Failed to open config file");
-        return;
-    }
+  // always use this to "mount" the filesystem
+  int result = LittleFS.begin();
+  Serial.println("LittleFS opened: " + result);
 
+  // Open file for reading
+  File file = LittleFS.open(filenamecnf, "r");
+
+  if (file) {
+    // Allocate a temporary JsonDocument
+    // Don't forget to change the capacity to match your requirements.
+    // Use arduinojson.org/v6/assistant to compute the capacity.
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, file);
-    if (error) {
-        Serial.println(F("Failed to read file, using default configuration"));
-    } else {
-        config.latitude = doc["latitude"];
-        config.longitude = doc["longitude"];
-        config.ip = String(doc["ip"]);
-    }
 
-    file.close();
-    LittleFS.end();
+    // Deserialize the JSON document
+    DeserializationError error = deserializeJson(doc, file);
+    if (error)
+      Serial.println(F("Failed to read file, using default configuration"));
+
+    // Copy values from the JsonDocument to the Config
+    config.latitude = doc["latitude"];
+    config.longitude = doc["longitude"];
+    config.ip = String(doc["ip"]);
+
+    //const char* name_ct = doc["city_name"];
+    //config.city_name = String(name_ct);
+    /*
+    strlcpy(config.ip,                  // <- destination
+            doc["ip"],  // <- source
+            sizeof(config.ip));         // <- destination's capacity
+  */
+  }
+  // Close the file (Curiously, File's destructor doesn't close the file)
+  file.close();
+
+  LittleFS.end();
 }
 
 // Saves the configuration to a file
 void saveConfiguration() {
-    if (!LittleFS.begin()) {
-        Serial.println("Failed to mount file system");
-        return;
-    }
 
-    LittleFS.remove(filenamecnf);
-    File file = LittleFS.open(filenamecnf, "w");
-    if (!file) {
-        Serial.println(F("Failed to create file"));
-        return;
-    }
+  // always use this to "mount" the filesystem
+  int result = LittleFS.begin();
+  Serial.println("LittleFS opened: ==");
+  Serial.println(result);
 
-    JsonDocument doc;
-    doc["latitude"] = config.latitude;
-    doc["longitude"] = config.longitude;
-    doc["ip"] = config.ip;
+  Serial.println("LittleFS file removed");
 
-    if (serializeJson(doc, file) == 0) {
-        Serial.println(F("Failed to write to file"));
-    } else {
-        Serial.println(F("Successfully wrote to file"));
-    }
+  Serial.println(filenamecnf);
 
-    file.close();
-    LittleFS.end();
+  // Open file for writing
+  File file = LittleFS.open(filenamecnf, "w");
+
+  Serial.println("LittleFS file opened");
+
+  if (!file) {
+    Serial.println(F("Failed to create file"));
+    return;
+  }
+
+  // Allocate a temporary JsonDocument
+  // Don't forget to change the capacity to match your requirements.
+  // Use arduinojson.org/assistant to compute the capacity.
+  JsonDocument doc;
+
+  // Set the values in the document
+  doc["latitude"] = config.latitude;
+  doc["longitude"] = config.longitude;
+  doc["ip"] = config.ip;
+  //doc["city_name"] = config.city_name;
+
+  // Serialize JSON to file
+  if (serializeJson(doc, file) == 0) {
+    Serial.println(F("Failed to write to file"));
+  } else {
+    Serial.println(F("Success to write to file"));
+  }
+
+  // Close the file
+  file.close();
+  LittleFS.end();
 }
 
 // Set time via NTP, as required for x.509 validation
 void setClock() {
-    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
-    Serial.print("Waiting for NTP time sync: ");
-    time_t now = time(nullptr);
-    while (now < 8 * 3600 * 2) {
-        delay(500);
-        Serial.print(".");
-        now = time(nullptr);
-    }
-
-    struct tm timeinfo;
-    gmtime_r(&now, &timeinfo);
-    Serial.print("\nCurrent time: ");
-    Serial.print(asctime(&timeinfo));
+  Serial.print("Waiting for NTP time sync: ");
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+  }
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.print("\n");
+  Serial.print("Current time: ");
+  Serial.print(asctime(&timeinfo));
 }
 
 void getLocationAPI(String ip) {
-    Serial.println("Start get location: really calling Google API");
 
-    setClock();
-    WifiLocation location(googleApiKey);
-    location_t loc = location.getGeoFromWiFi();
+  Serial.println("Start get location: really calling google API");
 
-    Serial.println("Result: " + location.wlStatusStr(location.getStatus()));
-    if (location.getStatus() != WL_STATUS_OK) {
-        Serial.println("Returned status not OK");
-        return;
-    }
+  setClock();
 
-    latitude = loc.lat;
-    longitude = loc.lon;
-    Serial.println("Latitude: " + String(latitude, 7));
-    Serial.println("Longitude: " + String(longitude, 7));
-    Serial.println("Accuracy: " + String(loc.accuracy));
+  WifiLocation location(googleApiKey);
 
-    config.latitude = latitude;
-    config.longitude = longitude;
-    config.ip = ip;
+  location_t loc = location.getGeoFromWiFi();
+  //delay(1000);
 
-    Serial.println("Finish get location: really calling Google API");
+  Serial.println("Result: " + location.wlStatusStr(location.getStatus()));
+  if (!location.wlStatusStr(location.getStatus()).equals("OK")) {
+    Serial.println("Returned status not OK");
+    //ESP.restart();
+    //return getLocationAPI();
+  }
+  Serial.println("Location request data");
+  Serial.println(location.getSurroundingWiFiJson());
+  latitude = loc.lat;
+  longitude = loc.lon;
+
+  Serial.println("Latitude: " + String(latitude, 7));
+  Serial.println("Longitude: " + String(longitude, 7));
+  Serial.println("Accuracy: " + String(loc.accuracy));
+
+  config.latitude = latitude;
+  config.longitude = longitude;
+
+  config.ip = ip;
+
+  //BingGeoCoding bingGeoCoding (bingMapsKey);
+  /*
+  //String ip = getIp();
+  char ip_c[15];
+  //ip.toCharArray(ip_c, 15);
+  strlcpy(config.ip,           // <- destination
+          ip,                // <- source
+          sizeof(config.ip));  // <- destination's capacity
+
+*/
+  Serial.println("Finish get location: really calling google API");
 }
 
 String getIp() {
-    Serial.println("Start get IP");
+  Serial.println("Start get IP");
 
-    std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-    client->setInsecure();
+  String payload;
 
-    HTTPClient http;
-    String path = "https://api.ipify.org";
+  BearSSL::WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
 
-    http.begin(*client, path);
-    int httpCode = http.GET();
-    String payload;
+  String path = "https://api.ipify.org";
 
-    if (httpCode == HTTP_CODE_OK) {
-        payload = http.getString();
-    } else {
+  Serial.println(path);
+
+  int attempts = 0;
+  const int maxAttempts = 3;
+  bool success = false;
+
+  while (attempts < maxAttempts && !success) {
+    if (http.begin(client, path)) {
+      Serial.println("Start IP retrieval attempt " + String(attempts + 1));
+      int httpCode = http.GET();  // Send the request
+
+      Serial.println("get ip ran");
+
+      if (httpCode == HTTP_CODE_OK) {  // Check the returning code
+        payload = http.getString();  // Get the request response payload
+        success = true;  // Set success flag
+      } else {
         Serial.print("Returned status not OK: ");
         Serial.println(httpCode);
-        ESP.restart();
+      }
+
+      http.end();  // Close connection
+    } else {
+      Serial.println("Failed to begin HTTP connection");
     }
 
-    http.end();
+    if (!success) {
+      attempts++;
+      if (attempts < maxAttempts) {
+        Serial.println("Retrying... (" + String(attempts) + "/" + String(maxAttempts) + ")");
+        delay(2000);  // Wait for 2 seconds before retrying
+      } else {
+        Serial.println("Failed to get IP after " + String(maxAttempts) + " attempts. Restarting...");
+        ESP.restart();
+      }
+    }
+  }
 
-    Serial.print("Got IP: ");
-    Serial.println(payload);
-    return payload;
+  Serial.print("Got IP: ");
+  Serial.println(payload);
+  return payload;
 }
 
+
 void location_init() {
-    ip = getIp();
-    loadConfiguration();
+
+  ip = getIp();
+
+  loadConfiguration();
 
     if (ip.equals(config.ip) && config.latitude != 0) {
         Serial.println("Set location from config");
