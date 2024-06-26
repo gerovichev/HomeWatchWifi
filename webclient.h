@@ -30,15 +30,30 @@ void wifiReset() {
 
 
 void handleRestart() {
-  String message = "";
+  Serial.println("Restarting...");
 
-  // Prepare the response
-  message = "<html>\r\nRestarting ....";
-  message += "</html>\n";
+  // Prepare the response HTML
+  String message = "<!DOCTYPE HTML>\r\n<html>\r\n<head>\r\n";
+  message += "<meta http-equiv='refresh' content='5;url=/' />\r\n";
+  message += "<title>Restarting</title>\r\n";
+  message += "<style>\r\n";
+  message += "body { background-color: #f0f0f0; font-family: Arial, Helvetica, Sans-Serif; color: #333; text-align: center; padding-top: 50px; }\r\n";
+  message += ".container { background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); padding: 20px; max-width: 500px; margin: 0 auto; }\r\n";
+  message += "</style>\r\n";
+  message += "</head>\r\n<body>\r\n";
+  message += "<div class='container'>\r\n<h1>Restarting</h1>\r\n";
+  message += "<p>Your device is restarting. The device will reboot in a few seconds.</p>\r\n";
+  message += "<p>If it doesn't redirect automatically, <a href='/'>click here</a>.</p>\r\n";
+  message += "</div>\r\n</body>\r\n</html>";
 
+  // Send the HTML response
   webServer.sendHeader("Connection", "close");
   webServer.send(HTTP_CODE_OK, "text/html", message);  //Returns the HTTP response
 
+  // Add a delay to allow the message to be displayed before restarting
+  delay(5000);
+
+  // Restart the ESP8266
   ESP.restart();
 }
 
@@ -74,26 +89,100 @@ void handleLed() {
   webServer.send(code, "text/html", message);  //Returns the HTTP response
 }
 
+const char htmlTemplate[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='refresh' content='5'/>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+  <title>ESP8266 Demo</title>
+  <style>
+    body {
+      background-color: #f0f0f0;
+      font-family: Arial, Helvetica, Sans-Serif;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      color: #007BFF;
+    }
+    p {
+      margin: 10px 0;
+    }
+    a {
+      color: #007BFF;
+      text-decoration: none;
+      margin: 0 5px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      .container {
+        padding: 15px;
+      }
+    }
+  </style>
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+  </script>
+</head>
+<body>
+  <div class='container'>
+    <h1>Hello from ESP8266!</h1>
+    <p>Current time: %s</p>
+    <button onclick='goBack()'>Back</button>
+  </div>
+</body>
+</html>
+)rawliteral";
+
 void handleTime() {
-  String temp;
+  // Get the current formatted time
+  String currentTime = timeClient.getFormattedTime();
 
-  temp = String("<html>\
-  <head>\
-    <meta http-equiv='refresh' content='5'/>\
-    <title>ESP8266 Demo</title>\
-    <style>\
-      body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
-    </style>\
-  </head>\
-  <body>\
-    <h1>Hello from ESP8266!</h1>\
-    <p>Current time: ")
-         + timeClient.getFormattedTime() + String("</p>\
-  </body>\
-</html>");
+  // Calculate the size of the buffer required
+  size_t htmlSize = strlen(htmlTemplate) + currentTime.length() + 1;
+  char html[htmlSize];
 
+  // Format the HTML with the current time
+  snprintf(html, htmlSize, htmlTemplate, currentTime.c_str());
+
+  // Send the HTML response
   webServer.sendHeader("Connection", "close");
-  webServer.send(200, "text/html", temp);
+  webServer.send(200, "text/html", html);
 }
 
 const char htmlPage[] PROGMEM = R"rawliteral(
