@@ -16,6 +16,7 @@ void readWeather() {
   BearSSL::WiFiClientSecure client;
   client.setInsecure();
   HTTPClient http;
+  http.setTimeout(1500); // Set the timeout
 
   String path = "https://api.openweathermap.org/data/3.0/onecall?lat=" + String(latitude, 2) + "&lon=" + String(longitude, 2) 
                 + "&units=metric&exclude=minutely,hourly,daily,alerts&appid=" + appidWeather + "&lang=" + lang_weather;

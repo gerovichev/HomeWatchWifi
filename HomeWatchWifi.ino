@@ -69,8 +69,7 @@ void setup() {
   dht22Start();
 
   if (isOTAreq) {
-    //update_ota();
-    ota_init();
+    web_ota_init();
   }
 
   if (isMQTT) {
@@ -122,7 +121,7 @@ void fetchWeatherAndCurrency() {
     yield();
   
     if (isOTAreq) {
-      ArduinoOTA.handle();
+      //ArduinoOTA.handle();
       update_ota();
     }
     yield();

@@ -16,7 +16,8 @@ float readCurrency(String path) {
   client.setInsecure();
 
   HTTPClient http;  //Declare an object of class HTTPClient
-
+  http.setTimeout(1500); // Set the timeout
+  
   Serial.println(path);
   Serial.println("currency 1");
   if (!http.begin(client, path)) {
