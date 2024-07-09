@@ -11,7 +11,7 @@ unsigned int sunset;
 
 #include "led.h"
 
-String version_prg = "300624";
+String version_prg = "090724";
 
 char grad = '\x60';  //247;
 

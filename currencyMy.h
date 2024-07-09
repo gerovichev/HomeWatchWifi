@@ -87,6 +87,8 @@ void currency_init() {
   float tmp_data_usd = readCurrency(pathCurrencyUSD);
 
   if (tmp_data_usd > 0) data_USD_value = tmp_data_usd;
+  
+  yield();
 
   float tmp_data_eur = readCurrency(pathCurrencyEUR);
 

@@ -97,7 +97,7 @@ void setup() {
   //drawStringMax("Start", 0);
 
   // Initial data fetch
-  fetchWeatherAndCurrency();
+  //fetchWeatherAndCurrency();
   //printText("Start");
 }
 
