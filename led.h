@@ -48,8 +48,6 @@ private:
   size_t bufferSize;
 };
 
-LEDBuffer ledBuffer(LED_MAX_BUF);
-
 // Sets the intensity of the display
 void setIntensity(byte intensity) {
   M.setIntensity(intensity);
@@ -79,49 +77,46 @@ void setIntensityByTime(time_t timeNow) {
   M.setIntensity(intensity);
 }
 
-
-
 // Converts UTF-8 to Russian characters
 String utf2rus(const String& source) {
   String target;
-  unsigned char n;
-  char m[2] = { '0', '\0' };
-  int i = 0, k = source.length();
+  target.reserve(source.length()); // Pre-allocate memory to avoid dynamic resizing
 
-  while (i < k) {
-    n = source[i++];
+  for (int i = 0, k = source.length(); i < k; ++i) {
+    unsigned char n = source[i];
     if (n >= 0xC0) {
       switch (n) {
-        case 0xD0:
-          n = source[i++];
-          if (n == 0x81) {
-            n = 0xA8;
-          } else if (n >= 0x90 && n <= 0xBF) {
-            n += 0x30;
-          }
+        case 0xD0: {
+          n = source[++i];
+          if (n == 0x81) { n = 0xA8; }
+          else if (n >= 0x90 && n <= 0xBF) { n += 0x30; }
           break;
-        case 0xD1:
-          n = source[i++];
-          if (n == 0x91) {
-            n = 0xB8;
-          } else if (n >= 0x80 && n <= 0x8F) {
-            n += 0x70;
-          }
+        }
+        case 0xD1: {
+          n = source[++i];
+          if (n == 0x91) { n = 0xB8; }
+          else if (n >= 0x80 && n <= 0x8F) { n += 0x70; }
           break;
+        }
       }
     }
-    m[0] = n;
-    target += m;
+    target += char(n);
   }
 
   return target;
 }
 
+// Global variable to store the last displayed text for comparison
+String lastDisplayedText = "";
+
 // Draws a string on the LED display
 void drawStringMax(const String& tape, int start) {
-  ledBuffer.clearBuffer();
-  utf2rus(tape).toCharArray(ledBuffer.getBuffer(), ledBuffer.getBufferSize());
-  newMessageAvailable = true;
+  // Convert the input text for display and check if it's different from the last displayed text
+  String convertedText = utf2rus(tape);
+  if (convertedText != lastDisplayedText) {
+    lastDisplayedText = convertedText; // Update the last displayed text
+    newMessageAvailable = true;
+  }
 }
 
 #define SCROLL_SPEED 50
@@ -129,20 +124,17 @@ void drawStringMax(const String& tape, int start) {
 
 // Displays the text on the LED display
 void realDisplayText() {
-  static LEDBuffer dataTmp(LED_MAX_BUF);  // Static to maintain state between calls
 
   if (M.displayAnimate() && newMessageAvailable) {
     newMessageAvailable = false;
-    dataTmp.clearBuffer();
-    strcpy(dataTmp.getBuffer(), ledBuffer.getBuffer());
     M.displayReset();
-    Serial.println(dataTmp.getBuffer());
+    Serial.println(lastDisplayedText);
     M.displayClear();  // Clear the display before setting new text
 
-    if (strlen(dataTmp.getBuffer()) > 5) {
-      M.displayText(dataTmp.getBuffer(), PA_LEFT, SCROLL_SPEED, PAUSE_TIME, PA_SCROLL_LEFT, PA_NO_EFFECT);
+    if (lastDisplayedText.length() > 5) {
+      M.displayText(lastDisplayedText.c_str(), PA_LEFT, SCROLL_SPEED, PAUSE_TIME, PA_SCROLL_LEFT, PA_NO_EFFECT);
     } else {
-      M.displayText(dataTmp.getBuffer(), PA_CENTER, SCROLL_SPEED, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
+      M.displayText(lastDisplayedText.c_str(), PA_CENTER, SCROLL_SPEED, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
     }
   }
 }

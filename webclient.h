@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ESP8266SSDP.h>
+#include "web_ota.h" // Include the web OTA header file
 //#include "WiFiManagerWrapper.h"
 
 ESP8266WebServer webServer(80);
@@ -243,6 +244,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(
         <p>Uptime: %02d:%02d:%02d</p>
         <p><a href='/time'>Time</a></p>
         <p><a href='/restart'>Restart</a></p>
+        <p><a href='/ota-update'>OTA</a></p>
         <p><a href='/wifireset'>WiFi Reset</a></p>
         <p><a href='/led'>LED</a></p>
     </div>
@@ -292,6 +294,12 @@ void handleNotFound() {
   webServer.send(HTTP_CODE_NOT_FOUND, "text/plain", message);
 }
 
+// Function for initiating the web OTA update
+void handleWebOtaUpdate() {
+  update_ota(); // Call the existing update_ota function from web_ota.h
+  webServer.send(200, "text/plain", "OTA update triggered"); // Send a response to indicate the OTA update was triggered
+}
+
 void ssdp_init() {
   Serial.printf("Starting HTTP...\n");
   webServer.on("/index.html", HTTP_GET, []() {
@@ -327,6 +335,7 @@ void webserver_init() {
 
     webServer.on("/time", handleTime);
     webServer.on("/restart", handleRestart);
+    webServer.on("/ota-update", HTTP_GET, handleWebOtaUpdate); // Define a route for triggering the OTA update
     webServer.on("/led", handleLed);
     webServer.on("/wifireset", wifiReset);
     webServer.on("/temperature", getTemperature);
