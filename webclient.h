@@ -241,7 +241,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 <body>
     <div class='container'>
         <h1>Hello from ESP8266! %s - %s</h1>
-        <p>Uptime: %02d:%02d:%02d</p>
+        <p>Uptime: %02d days %02d:%02d:%02d</p>
         <p><a href='/time'>Time</a></p>
         <p><a href='/restart'>Restart</a></p>
         <p><a href='/ota-update'>OTA</a></p>
@@ -257,12 +257,15 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 
 void handleRoot() {
   char temp[htmlPageSize + 100];
-  int sec = millis() / 1000;
-  int min = sec / 60;
-  int hr = min / 60;
+  // Calculate and display the working time
+  unsigned long workingTimeMillis = millis();
+  unsigned long seconds = (workingTimeMillis / 1000) % 60;
+  unsigned long minutes = (workingTimeMillis / (1000 * 60)) % 60;
+  unsigned long hours = (workingTimeMillis / (1000 * 60 * 60)) % 24;
+  unsigned long days = (workingTimeMillis / (1000 * 60 * 60 * 24));
 
 
-  snprintf(temp, htmlPageSize + 100, htmlPage, hostname_m.c_str(), version_prg.c_str(), hr, min % 60, sec % 60);
+  snprintf(temp, htmlPageSize + 100, htmlPage, hostname_m.c_str(), version_prg.c_str(), days, hours, minutes, seconds);
   webServer.sendHeader("Connection", "close");
   webServer.send(HTTP_CODE_OK, "text/html", temp);
 }
