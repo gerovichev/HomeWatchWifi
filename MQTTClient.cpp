@@ -10,40 +10,46 @@ void reconnect() {
   const int maxAttempts = 3;
 
   while (!client.connected() && attemptCount < maxAttempts) {
-    Serial.print("Attempting MQTT connection...");
+    if (Serial) Serial.print(F("Attempting MQTT connection..."));
     if (client.connect("ESP8266Client", mqtt_user, mqtt_password)) {
-      Serial.println("connected");
+      if (Serial) Serial.println(F("connected"));
     } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      if (Serial) 
+      {
+        Serial.print(F("failed, rc="));
+        Serial.print(client.state());
+        Serial.println(F(" try again in 5 seconds"));
+      }
       delay(5000);
       attemptCount++;
     }
   }
 
-  if (attemptCount >= maxAttempts) {
-    Serial.println("Max connection attempts reached. Could not connect to MQTT broker.");
+  if (attemptCount >= maxAttempts && Serial ) {
+    Serial.println(F("Max connection attempts reached. Could not connect to MQTT broker."));
   }
 }
 
 
 void setup_mqtt() {
   client.setServer(mqtt_server, 1883);
-  Serial.println("Topic name " + mqtt_topic_str);
+  if (Serial) Serial.println(F("Topic name ") + mqtt_topic_str);
 }
 
 void publish_temperature(float homeTemper) {
   float temperature = homeTemper;
   
   if (isnan(temperature)) {
-    Serial.println("Failed to read from DHT sensor!");
+    Serial.println(F("Failed to read from DHT sensor!"));
     return;
   }
 
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.println(" *C");
+  if (Serial) 
+  {
+    Serial.print(F("Temperature: "));
+    Serial.print(temperature);
+    Serial.println(F(" *C"));
+  }
 
   char tempString[8];
   dtostrf(temperature, 1, 2, tempString);

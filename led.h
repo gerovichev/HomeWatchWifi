@@ -69,11 +69,14 @@ String formatTime(time_t rawTime) {
 void setIntensityByTime(time_t timeNow) {
   int intensity = (timeNow > sunrise && timeNow < sunset) ? 2 : 0;
 
-  Serial.println("sunrise: " + formatTime(sunrise)); 
-  Serial.println("Time: " + formatTime(timeNow));
-  Serial.println("sunset: " + formatTime(sunset));
+  if (Serial) 
+  {
+    Serial.println(F("sunrise: ") + formatTime(sunrise)); 
+    Serial.println(F("Time: ") + formatTime(timeNow));
+    Serial.println(F("sunset: ") + formatTime(sunset));
 
-  Serial.printf("intensity %d\n", intensity);
+    Serial.printf("intensity %d\n", intensity);
+  }
   M.setIntensity(intensity);
 }
 
@@ -110,7 +113,7 @@ String utf2rus(const String& source) {
 String lastDisplayedText = "";
 
 // Draws a string on the LED display
-void drawStringMax(const String& tape, int start) {
+void drawStringMax(const String& tape) {
   // Convert the input text for display and check if it's different from the last displayed text
   String convertedText = utf2rus(tape);
   if (convertedText != lastDisplayedText) {
@@ -128,7 +131,7 @@ void realDisplayText() {
   if (M.displayAnimate() && newMessageAvailable) {
     newMessageAvailable = false;
     M.displayReset();
-    Serial.println(lastDisplayedText);
+    if (Serial) Serial.println(lastDisplayedText);
     M.displayClear();  // Clear the display before setting new text
 
     if (lastDisplayedText.length() > 5) {
@@ -156,7 +159,7 @@ void matrixSetup() {
 
 // Prints the given text on the LED display
 void printText(String text) {
-  Serial.println(text);
+  if (Serial) Serial.println(text);
   char dataText[LED_MAX_BUF];
   utf2rus("     " + text).toCharArray(dataText, LED_MAX_BUF);
 

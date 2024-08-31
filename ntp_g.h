@@ -20,17 +20,23 @@ String city_name;
 String getNumberWithZerro(int dig);
 
 void getTimezone() {
-  Serial.println("Start get timezone");
+  if (Serial) 
+  {
+    Serial.println("Start get timezone");
 
-  Serial.println(zoneEnd);
-  Serial.println(timeNow);
+    Serial.println(zoneEnd);
+    Serial.println(timeNow);
+  }
 
   if (zoneEnd > timeNow) {
     time_t untilTimeMove = zoneEnd - timeNow;
     int daysUntilTimeMove = untilTimeMove / 86400;
-    Serial.print("Days before hour move: ");
-    Serial.println(daysUntilTimeMove);
-    Serial.println("Don't need to update timezone");
+    if (Serial) 
+    {
+      Serial.print("Days before hour move: ");
+      Serial.println(daysUntilTimeMove);
+      Serial.println("Don't need to update timezone");
+    }
     return;
   }
 
@@ -48,18 +54,18 @@ void getTimezone() {
 
   while (attempts < maxAttempts && !success) {
     if (http.begin(client, path)) {
-      Serial.println("Start timezone attempt " + String(attempts + 1));
+      if (Serial) Serial.println("Start timezone attempt " + String(attempts + 1));
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {       // Check the returning code
         String payload = http.getString();  // Get the request response payload
-        Serial.println(payload);
+        if (Serial) Serial.println(payload);
 
         JsonDocument doc;  
         DeserializationError error = deserializeJson(doc, payload);
         // Test if parsing succeeds
         if (!error) {
-          Serial.println(F("Deserialization succeeded"));
+          if (Serial) Serial.println(F("Deserialization succeeded"));
           JsonObject root = doc.as<JsonObject>();
 
           const char* status = root["status"];  // "OK"
@@ -74,32 +80,29 @@ void getTimezone() {
             const char* name_ct = root["cityName"];
             city_name = String(name_ct);
 
-            Serial.print("offset: ");
-            Serial.println(offset);
+            if (Serial) Serial.println(F("offset: ") + String(offset));
 
             success = true;  // Set success flag
           }
         } else {
-          Serial.print(F("deserializeJson() failed: "));
-          Serial.println(error.c_str());
+          if (Serial) Serial.println(F("deserializeJson() failed: ") + String(error.c_str()));
         }
       } else {
-        Serial.print("No timezone response: ");
-        Serial.println(httpCode);
+        if (Serial) Serial.println(F("No timezone response: ") + String(httpCode));
       }
 
       http.end();  // Close connection
     } else {
-      Serial.println("Failed to begin HTTP connection");
+      if (Serial) Serial.println(F("Failed to begin HTTP connection"));
     }
 
     if (!success) {
       attempts++;
       if (attempts < maxAttempts) {
-        Serial.println("Retrying... (" + String(attempts) + "/" + String(maxAttempts) + ")");
+        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
         delay(2000);  // Wait for 2 seconds before retrying
       } else {
-        Serial.println("Failed to get timezone data after " + String(maxAttempts) + " attempts.");
+        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttempts) + F(" attempts."));
       }
     }
   }
@@ -109,25 +112,23 @@ void getTimezone() {
 void printTimeToScreen() {
   //Serial.println("Time: " + timeClient.getFormattedTime());
   String tape = timeClient.getFormattedTime().substring(0, 5);  //formattedTime("%H:%M");//.substring(0, 5);
-  drawString(tape, 0);
+  drawString(tape);
 }
 
 void printDateToScreen() {
   time_t epochTime = timeClient.getEpochTime();
   struct tm* ptm = gmtime((time_t*)&epochTime);
-  String tape = getNumberWithZerro(ptm->tm_mday) + "/" + getNumberWithZerro(ptm->tm_mon + 1);
-  /*String tape = timeClient.formattedTime("%d/%m");*/
-  int mv = 5 - tape.length();
-  drawString(tape, mv);
+  String tape = getNumberWithZerro(ptm->tm_mday) + F("/") + getNumberWithZerro(ptm->tm_mon + 1);
+  drawString(tape);
 }
 
 void printDayToScreen() {
   String tape = daysOfTheWeek[timeClient.getDay()];
-  drawString(tape, 2);
+  drawString(tape);
 }
 
 void printCityToScreen() {
-  drawString(city_name, 0);
+  drawString(city_name);
 }
 
 void ntp_init() {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ESP8266WebServer.h>
 #include <ESP8266SSDP.h>
 #include "web_ota.h" // Include the web OTA header file
 //#include "WiFiManagerWrapper.h"
@@ -56,38 +57,6 @@ void handleRestart() {
 
   // Restart the ESP8266
   ESP.restart();
-}
-
-void handleLed() {
-  String message = "";
-  int code = HTTP_CODE_OK;
-  if (!webServer.hasArg("color") || !webServer.hasArg("val")) {
-    message = "One of arguments not found";
-    code = HTTP_CODE_BAD_REQUEST;
-  } else {
-    int val = webServer.arg("val").toInt();
-    String col = webServer.arg("color");
-    int color;
-    if (col.equals("RED")) {
-      color = RED;
-    } else if (col.equals("GREEN")) {
-      color = GREEN;
-    } else if (col.equals("BLUE")) {
-      color = BLUE;
-    } else {
-      color = RED;
-    }
-
-    // Set GPIO according to the request
-    digitalWrite(color, val);
-    // Prepare the response
-    message = "<html>\r\nGPIO " + col + " is now ";
-    message += (val) ? "high" : "low";
-    message += "</html>\n";
-  }
-
-  webServer.sendHeader("Connection", "close");
-  webServer.send(code, "text/html", message);  //Returns the HTTP response
 }
 
 const char htmlTemplate[] PROGMEM = R"rawliteral(
@@ -175,11 +144,18 @@ void handleTime() {
   String currentTime = timeClient.getFormattedTime();
 
   // Calculate the size of the buffer required
-  size_t htmlSize = strlen(htmlTemplate) + currentTime.length() + 1;
+  size_t htmlSize = strlen(htmlTemplate) + currentTime.length() - 2 + 1; // -2 for the %s and +1 for null-terminator
   char html[htmlSize];
 
   // Format the HTML with the current time
-  snprintf(html, htmlSize, htmlTemplate, currentTime.c_str());
+  int bytesWritten = snprintf(html, htmlSize, htmlTemplate, currentTime.c_str());
+
+  // Check for potential issues
+  if (bytesWritten < 0 || (size_t)bytesWritten >= htmlSize) {
+      // Handle the error or truncation case
+      webServer.send(500, "text/plain", "Internal Server Error");
+      return;
+  }
 
   // Send the HTML response
   webServer.sendHeader("Connection", "close");
@@ -241,7 +217,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 <body>
     <div class='container'>
         <h1>Hello from ESP8266! %s - %s</h1>
-        <p>Uptime: %02d days %02d:%02d:%02d</p>
+        <p>Uptime: %02lu days %02lu:%02lu:%02lu</p>
         <p><a href='/time'>Time</a></p>
         <p><a href='/restart'>Restart</a></p>
         <p><a href='/ota-update'>OTA</a></p>
@@ -252,31 +228,49 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-  // Get the size of the htmlPage
-  size_t htmlPageSize = strlen(htmlPage);
+unsigned long prevMillis = 0;
+unsigned long totalMillis = 0;
+
+void updateTotalMillis() {
+    unsigned long currentMillis = millis();
+    
+    if (currentMillis < prevMillis) {
+        // Overflow detected
+        totalMillis += (4294967295 - prevMillis) + currentMillis + 1;
+    } else {
+        totalMillis += (currentMillis - prevMillis);
+    }
+
+    prevMillis = currentMillis;
+}
 
 void handleRoot() {
-  char temp[htmlPageSize + 100];
+
+  size_t baseSize = strlen(htmlPage);
+  size_t dynamicSize = hostname_m.length() + version_prg.length();
+  size_t timeSize = 4 * 10; // Maximum possible size for days, hours, minutes, seconds (10 digits each)
+  size_t totalSize = baseSize + dynamicSize + timeSize + 20; // Adding a margin
+
+  char temp[totalSize]; // Allocate the buffer with the calculated size
+
   // Calculate and display the working time
-  unsigned long workingTimeMillis = millis();
+  updateTotalMillis();
+  unsigned long workingTimeMillis = totalMillis;
   unsigned long seconds = (workingTimeMillis / 1000) % 60;
   unsigned long minutes = (workingTimeMillis / (1000 * 60)) % 60;
   unsigned long hours = (workingTimeMillis / (1000 * 60 * 60)) % 24;
   unsigned long days = (workingTimeMillis / (1000 * 60 * 60 * 24));
 
 
-  snprintf(temp, htmlPageSize + 100, htmlPage, hostname_m.c_str(), version_prg.c_str(), days, hours, minutes, seconds);
+  int bytesWritten = snprintf(temp, sizeof(temp), htmlPage, hostname_m.c_str(), version_prg.c_str(), days, hours, minutes, seconds);
+      // Check if snprintf caused truncation
+    if (bytesWritten < 0 || (size_t)bytesWritten >= totalSize) {
+        // Handle the truncation or error case
+        webServer.send(500, "text/plain", "Internal Server Error: Content too long");
+        return;
+    }
   webServer.sendHeader("Connection", "close");
   webServer.send(HTTP_CODE_OK, "text/html", temp);
-}
-
-void getTemperature() {
-  detachInterrupt_clock_process();
-
-  String tape = "{\"temperature\":" + String(round(homeTemp), 0) + ",\"humidity\":" + String(round(homeHumidity), 0) + "}";
-  webServer.sendHeader("Connection", "close");
-  webServer.send(200, "application/json", tape);
-  init_clock_process();
 }
 
 void handleNotFound() {
@@ -304,7 +298,7 @@ void handleWebOtaUpdate() {
 }
 
 void ssdp_init() {
-  Serial.printf("Starting HTTP...\n");
+  Serial.println("Starting HTTP...");
   webServer.on("/index.html", HTTP_GET, []() {
     webServer.sendHeader("Connection", "close");
     webServer.send(200, "text/plain", "Hello World!");
@@ -312,20 +306,20 @@ void ssdp_init() {
 
   //webServer.begin();
 
-  Serial.printf("Starting SSDP...\n");
-  SSDP.setSchemaURL("description.xml");
+  Serial.println(F("Starting SSDP..."));
+  SSDP.setSchemaURL(F("description.xml"));
   SSDP.setHTTPPort(80);
-  SSDP.setName("ESP watch");
-  SSDP.setSerialNumber("000000001");
-  SSDP.setURL("/");
-  SSDP.setModelName("ESP Watch 2023");
-  SSDP.setModelNumber("01");
-  SSDP.setModelURL("https://gerovichev.wixsite.com/gerovichev");
-  SSDP.setManufacturer("Gerovichev Electronics");
-  SSDP.setManufacturerURL("https://gerovichev.wixsite.com/gerovichev");
+  SSDP.setName(F("ESP watch"));
+  SSDP.setSerialNumber(F("000000001"));
+  SSDP.setURL(F("/"));
+  SSDP.setModelName(F("ESP Watch 2024"));
+  SSDP.setModelNumber(F("01"));
+  SSDP.setModelURL(F("https://gerovichev.wixsite.com/gerovichev"));
+  SSDP.setManufacturer(F("Gerovichev Electronics"));
+  SSDP.setManufacturerURL(F("https://gerovichev.wixsite.com/gerovichev"));
   SSDP.begin();
 
-  webServer.on("/description.xml", HTTP_GET, []() {
+  webServer.on(F("/description.xml"), HTTP_GET, []() {
     SSDP.schema(webServer.client());
   });
 }
@@ -339,11 +333,10 @@ void webserver_init() {
     webServer.on("/time", handleTime);
     webServer.on("/restart", handleRestart);
     webServer.on("/ota-update", HTTP_GET, handleWebOtaUpdate); // Define a route for triggering the OTA update
-    webServer.on("/led", handleLed);
     webServer.on("/wifireset", wifiReset);
-    webServer.on("/temperature", getTemperature);
     webServer.on("/", handleRoot);
     webServer.onNotFound(handleNotFound);
+    webServer.keepAlive(true);
     webServer.begin();
   }
 }

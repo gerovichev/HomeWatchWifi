@@ -7,7 +7,7 @@
 
 void wifi_init() {
 
-  Serial.println("Start load WIFI");
+  if (Serial) Serial.println(F("Start load WIFI"));
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
@@ -39,7 +39,7 @@ void wifi_init() {
   //wifiManager.autoConnect();
 
   if (!res) {
-    Serial.println("Failed to connect or hit timeout");
+    if (Serial) Serial.println(F("Failed to connect or hit timeout"));
     //ESP.restart();
   } else {
     //WiFi.mode(WIFI_STA);
@@ -49,17 +49,18 @@ void wifi_init() {
     WiFi.setAutoReconnect(true);
     WiFi.persistent(true);
 
-    //if you get here you have connected to the WiFi
-    Serial.println("connected...yeey :)");
-    Serial.println("Ready");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    if (Serial) 
+    {
+      //if you get here you have connected to the WiFi
+      Serial.println(F("connected...yeey :)"));
+      Serial.println(F("Ready"));
+      Serial.print(F("IP address: "));
+      Serial.println(WiFi.localIP());
 
-    Serial.println("WIFI handled");
+      Serial.println(F("WIFI handled"));
+    }
   }
 }
-
-
 
 void wifi_reset() {
   //WiFiManager

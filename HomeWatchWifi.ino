@@ -34,7 +34,7 @@ void setup() {
 
   delay(500);
 
-  Serial.println("Start ...");
+  if (Serial) Serial.println(F("Start ..."));
 
 
 
@@ -42,13 +42,13 @@ void setup() {
 
   matrixSetup();
 
-  printText("Hello " + nameofWatch);
+  printText(F("Hello ") + nameofWatch);
   delay(1500);
 
   printText(version_prg);
   delay(2000);
 
-  printText("Connect WIFI");
+  printText(F("Connect WIFI"));
   //delay(500);
 
   //wifiManagerWrapper.init();
@@ -112,11 +112,11 @@ void fetchWeatherAndCurrency() {
   if (isRunWeather) {
 
     isRunWeather = false;
-    Serial.println("Start detach");
+    if (Serial) Serial.println(F("Start detach"));
     
     //updateDataTicker.detach();
     detachInterrupt_clock_process();
-    Serial.println("Detached");
+    if (Serial) Serial.println(F("Detached"));
     yield();
   
     if (isOTAreq) {
@@ -125,9 +125,9 @@ void fetchWeatherAndCurrency() {
     }
     yield();
 
-    Serial.println("Time: " + timeClient.getEpochTime());  // dd. Mmm yyyy
+    if (Serial) Serial.println("Time: " + timeClient.getEpochTime());  // dd. Mmm yyyy
     getTimezone();
-    Serial.println("Get time zone finished");    
+    if (Serial) Serial.println(F("Get time zone finished"));    
     yield();
 
     readWeather();
@@ -171,4 +171,5 @@ void loop() {
     realDisplayText();
   }
   webClientHandle();
+  ESP.wdtFeed();  // Feed the watchdog regularly
 }

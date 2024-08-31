@@ -11,7 +11,7 @@ unsigned int sunset;
 
 #include "led.h"
 
-String version_prg = "260724";
+String version_prg = "310824";
 
 char grad = '\x60';  //247;
 
@@ -47,8 +47,11 @@ void initPerDevice() {
   setDeviceConfig();
 
   String macAddr = WiFi.macAddress();
-  Serial.print("MAC: ");
-  Serial.println(macAddr);
+  if (Serial)
+  {
+    Serial.print(F("MAC: "));
+    Serial.println(macAddr);
+  }
 
   macAddrSt = macAddr;
 
@@ -106,7 +109,7 @@ String getNumberWithZerro(int dig) {
   return tape;
 }
 
-void drawString(String tape, int start) {
-  drawStringMax(tape, start);
+void drawString(String tape) {
+  drawStringMax(tape);
 }
 

@@ -29,7 +29,7 @@ public:
     void loop() {
         if (runClock) {
             runClock = false;
-            Serial.println(clockCounter);
+            if (Serial) Serial.println(clockCounter);
 
             if (clockCounter % 2 == 0) {
                 printTimeToScreen();

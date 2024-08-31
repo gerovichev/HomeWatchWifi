@@ -11,17 +11,17 @@ unsigned int main_ext_humidity;
 String description_weather;
 
 void readWeather() {
-  Serial.println("Start get weather");
+  if (Serial) Serial.println(F("Start get weather"));
 
   BearSSL::WiFiClientSecure client;
   client.setInsecure();
   HTTPClient http;
   http.setTimeout(1500); // Set the timeout
 
-  String path = "https://api.openweathermap.org/data/3.0/onecall?lat=" + String(latitude, 2) + "&lon=" + String(longitude, 2) 
-                + "&units=metric&exclude=minutely,hourly,daily,alerts&appid=" + appidWeather + "&lang=" + lang_weather;
+  String path = F("https://api.openweathermap.org/data/3.0/onecall?lat=") + String(latitude, 2) + F("&lon=") + String(longitude, 2) 
+                + F("&units=metric&exclude=minutely,hourly,daily,alerts&appid=") + appidWeather + F("&lang=") + lang_weather;
 
-  Serial.println(path);
+  if (Serial) Serial.println(path);
 
   int attempts = 0;
   const int maxAttempts = 3;
@@ -29,13 +29,12 @@ void readWeather() {
 
   while (attempts < maxAttempts && !success) {
     if (http.begin(client, path)) {
-      Serial.println("Start weather attempt " + String(attempts + 1));
+      if (Serial) Serial.println(F("Start weather attempt ") + String(attempts + 1));
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {  // Check the returning code
         String payload = http.getString();  // Get the request response payload
-        Serial.println("payload: ");
-        Serial.println(payload);
+        if (Serial) Serial.println("payload: " + payload);
 
         JsonDocument doc; 
         DeserializationError error = deserializeJson(doc, payload);
@@ -44,10 +43,10 @@ void readWeather() {
           JsonObject current = doc["current"];
           unsigned int timezone_offset = doc["timezone_offset"]; 
           sunrise = current["sunrise"];
-          Serial.println("sunrise1: " + formatTime(sunrise));
+          if (Serial) Serial.println("sunrise1: " + formatTime(sunrise));
           sunset = current["sunset"];
           sunrise = sunrise + timezone_offset;
-          Serial.println("sunrise2: " + formatTime(sunrise));
+          if (Serial) Serial.println("sunrise2: " + formatTime(sunrise));
           sunset = sunset + timezone_offset;
 
           float current_temp = current["temp"];
@@ -64,56 +63,50 @@ void readWeather() {
 
           success = true;  // Set success flag
         } else {
-          Serial.println("JSON deserialization failed: " + String(error.c_str()));
+          if (Serial) Serial.println(F("JSON deserialization failed: ") + String(error.c_str()));
         }
       } else {
-        Serial.println("No weather response: " + String(httpCode, DEC));
+        if (Serial) Serial.println(F("No weather response: ") + String(httpCode, DEC));
       }
 
       http.end();  // Close connection
     } else {
-      Serial.println("Failed to begin HTTP connection");
+      if (Serial) Serial.println(F("Failed to begin HTTP connection"));
     }
 
     if (!success) {
       attempts++;
       if (attempts < maxAttempts) {
-        Serial.println("Retrying... (" + String(attempts) + "/" + String(maxAttempts) + ")");
+        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
         delay(2000);  // Wait for 2 seconds before retrying
       } else {
-        Serial.println("Failed to get weather data after " + String(maxAttempts) + " attempts.");
+        if (Serial) Serial.println(F("Failed to get weather data after ") + String(maxAttempts) + F(" attempts."));
       }
     }
   }
 }
 
 void printWeatherToScreen() {
-    String tape = String(temperature, DEC) + getGradValue() + "C";
-    int mv = 5 - tape.length();
-    drawString(tape, mv);
+    String tape = String(temperature, DEC) + getGradValue() + F("C");
+    drawString(tape);
 }
 
 void printMaxTempToScreen() {
-    String tape = "Feels like " + String(temp_max, DEC) + getGradValue() + "C";
-    drawString(tape, 0);
+    String tape = F("Feels like ") + String(temp_max, DEC) + getGradValue() + F("C");
+    drawString(tape);
 }
 
 void printPressureToScreen() {
-    String tape = String(pressure, DEC) + "mm";
-    drawString(tape, 0);
+    String tape = String(pressure, DEC) + F("mm");
+    drawString(tape);
 }
 
 void printHumidityToScreen() {
-    String tape = String(main_ext_humidity, DEC) + "%";
-    int mv = 5 - tape.length();
-    drawString(tape, mv);
+    String tape = String(main_ext_humidity, DEC) + F("%");
+    drawString(tape);
 }
 
 void printDescriptionWeatherToScreen() {
-  int mv = 0;
   description_weather.toUpperCase();
-  if (description_weather.length() < 10) {
-    mv = 5 - description_weather.length() / 2;
-  }
-  drawString(description_weather, mv);
+  drawString(description_weather);
 }

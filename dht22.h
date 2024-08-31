@@ -55,24 +55,36 @@ void printHumidity() {
 }
 
 void printSensorDetails(sensor_t sensor, const char* type) {
-    Serial.println("------------------------------------");
-    Serial.println(type);
-    Serial.print("Sensor:       ");
-    Serial.println(sensor.name);
-    Serial.print("Driver Ver:   ");
-    Serial.println(sensor.version);
-    Serial.print("Unique ID:    ");
-    Serial.println(sensor.sensor_id);
-    Serial.print("Max Value:    ");
-    Serial.print(sensor.max_value);
-    Serial.println(type == "Temperature" ? " *C" : " %");
-    Serial.print("Min Value:    ");
-    Serial.print(sensor.min_value);
-    Serial.println(type == "Temperature" ? " *C" : " %");
-    Serial.print("Resolution:   ");
-    Serial.print(sensor.resolution);
-    Serial.println(type == "Temperature" ? " *C" : " %");
-    Serial.println("------------------------------------");
+    if (Serial) {
+      Serial.println(F("------------------------------------"));
+      Serial.println(type);
+      
+      Serial.print(F("Sensor:       "));
+      Serial.println(sensor.name);
+      
+      Serial.print(F("Driver Ver:   "));
+      Serial.println(sensor.version);
+      
+      Serial.print(F("Unique ID:    "));
+      Serial.println(sensor.sensor_id);
+      
+      // Determine the unit based on the sensor type
+      const char* unit = (strcmp(type, "Temperature") == 0) ? " *C" : " %";
+      
+      Serial.print(F("Max Value:    "));
+      Serial.print(sensor.max_value);
+      Serial.println(unit);
+      
+      Serial.print(F("Min Value:    "));
+      Serial.print(sensor.min_value);
+      Serial.println(unit);
+      
+      Serial.print(F("Resolution:   "));
+      Serial.print(sensor.resolution);
+      Serial.println(unit);
+      
+      Serial.println(F("------------------------------------"));
+    }
 }
 
 void readAndPrintTemperature() {
@@ -82,11 +94,11 @@ void readAndPrintTemperature() {
         handleTemperatureError();
     } else {
         homeTemp = event.temperature;
-        Serial.print("Temperature: ");
-        Serial.print(homeTemp);
-        Serial.println(" *C");
-        String tape = "T" + String(round(homeTemp), 0) + getGradValue() + "C";
-        drawString(tape, 0);
+        if (Serial) Serial.print(F("Temperature: "));
+        if (Serial) Serial.print(homeTemp);
+        if (Serial) Serial.println(F(" *C"));
+        String tape = F("T") + String(round(homeTemp), 0) + getGradValue() + "C";
+        drawString(tape);
     }
 }
 
@@ -97,22 +109,21 @@ void readAndPrintHumidity() {
         handleHumidityError();
     } else {
         homeHumidity = event.relative_humidity + humidity_delta;
-        Serial.print("Humidity: ");
-        Serial.print(homeHumidity);
-        Serial.println("%");
+        if (Serial) Serial.print(F("Humidity: "));
+        if (Serial) Serial.print(homeHumidity);
+        if (Serial) Serial.println(F("%"));
         String tape = String(round(homeHumidity), 0) + "%";
-        tape = tape.length() == 4 ? "H" + tape : "H " + tape;
-        int mv = 5 - tape.length();
-        drawString(tape, mv);
+        tape = tape.length() == 4 ? F("H") + tape : F("H ") + tape;
+        drawString(tape);
     }
 }
 
 void handleTemperatureError() {
     dht22Start();
-    Serial.println("Error reading temperature!");
+    if (Serial) Serial.println(F("Error reading temperature!"));
 }
 
 void handleHumidityError() {
     dht22Start();
-    Serial.println("Error reading humidity!");
+    if (Serial) Serial.println(F("Error reading humidity!"));
 }
