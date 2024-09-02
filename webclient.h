@@ -7,10 +7,6 @@
 
 ESP8266WebServer webServer(80);
 
-const int RED = 15;
-const int GREEN = 12;
-const int BLUE = 13;
-
 void wifiReset() {
 
   Serial.println("Web reading");
@@ -222,7 +218,6 @@ const char htmlPage[] PROGMEM = R"rawliteral(
         <p><a href='/restart'>Restart</a></p>
         <p><a href='/ota-update'>OTA</a></p>
         <p><a href='/wifireset'>WiFi Reset</a></p>
-        <p><a href='/led'>LED</a></p>
     </div>
 </body>
 </html>

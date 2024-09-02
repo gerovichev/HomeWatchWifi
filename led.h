@@ -1,8 +1,8 @@
 #pragma once
 
 #include <MD_Parola.h>
-#include <MD_MAX72xx.h>
-#include <SPI.h>
+//#include <MD_MAX72xx.h>
+//#include <SPI.h>
 #include <vector>
 #include "fonts.h"
 #include "global.h"
