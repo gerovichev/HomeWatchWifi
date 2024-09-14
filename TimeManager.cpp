@@ -1,29 +1,20 @@
-#pragma once
-
-#include <ArduinoJson.h>
-#include <WiFiClientSecureBearSSL.h>
-#include <NTPClient.h>
-
+#include "TimeManager.h"
 
 WiFiUDP ntpUDP;
-
-NTPClient timeClient(ntpUDP);  //, "pool.ntp.org");
+NTPClient timeClient(ntpUDP);
 
 time_t zoneStart;
 time_t zoneEnd;
 time_t timeNow;
 
 int offset;
-
 String city_name;
 
-String getNumberWithZerro(int dig);
+
 
 void getTimezone() {
-  if (Serial) 
-  {
+  if (Serial) {
     Serial.println("Start get timezone");
-
     Serial.println(zoneEnd);
     Serial.println(timeNow);
   }
@@ -31,8 +22,7 @@ void getTimezone() {
   if (zoneEnd > timeNow) {
     time_t untilTimeMove = zoneEnd - timeNow;
     int daysUntilTimeMove = untilTimeMove / 86400;
-    if (Serial) 
-    {
+    if (Serial) {
       Serial.print("Days before hour move: ");
       Serial.println(daysUntilTimeMove);
       Serial.println("Don't need to update timezone");
@@ -45,7 +35,7 @@ void getTimezone() {
   HTTPClient http;
 
   String path = "https://api.timezonedb.com/v2.1/get-time-zone?key=" + apiKeyTimezone + "&format=json&lat=" + String(latitude, 2) + "&lng=" + String(longitude, 2) + "&by=position";
-
+  
   Serial.println(path);
 
   int attempts = 0;
@@ -57,21 +47,19 @@ void getTimezone() {
       if (Serial) Serial.println("Start timezone attempt " + String(attempts + 1));
       int httpCode = http.GET();  // Send the request
 
-      if (httpCode == HTTP_CODE_OK) {       // Check the returning code
-        String payload = http.getString();  // Get the request response payload
+      if (httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
         if (Serial) Serial.println(payload);
 
-        JsonDocument doc;  
+        DynamicJsonDocument doc(1024);
         DeserializationError error = deserializeJson(doc, payload);
-        // Test if parsing succeeds
         if (!error) {
           if (Serial) Serial.println(F("Deserialization succeeded"));
           JsonObject root = doc.as<JsonObject>();
 
-          const char* status = root["status"];  // "OK"
-
+          const char* status = root["status"];
           if (strcmp(status, "OK") == 0) {
-            offset = (int)root["gmtOffset"];  // 10800
+            offset = (int)root["gmtOffset"];
             timeClient.setTimeOffset(offset);
 
             zoneStart = (unsigned long)root["zoneStart"];
@@ -82,7 +70,7 @@ void getTimezone() {
 
             if (Serial) Serial.println(F("offset: ") + String(offset));
 
-            success = true;  // Set success flag
+            success = true;
           }
         } else {
           if (Serial) Serial.println(F("deserializeJson() failed: ") + String(error.c_str()));
@@ -91,7 +79,7 @@ void getTimezone() {
         if (Serial) Serial.println(F("No timezone response: ") + String(httpCode));
       }
 
-      http.end();  // Close connection
+      http.end();
     } else {
       if (Serial) Serial.println(F("Failed to begin HTTP connection"));
     }
@@ -100,18 +88,16 @@ void getTimezone() {
       attempts++;
       if (attempts < maxAttempts) {
         if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
-        delay(2000);  // Wait for 2 seconds before retrying
+        delay(2000);
       } else {
-        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttempts) + F(" attempts."));
+        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttempts) + F(" attempts."));    
       }
     }
   }
 }
 
-
 void printTimeToScreen() {
-  //Serial.println("Time: " + timeClient.getFormattedTime());
-  String tape = timeClient.getFormattedTime().substring(0, 5);  //formattedTime("%H:%M");//.substring(0, 5);
+  String tape = timeClient.getFormattedTime().substring(0, 5);
   drawString(tape);
 }
 
@@ -135,6 +121,5 @@ void ntp_init() {
   timeClient.begin();
   getTimezone();
   timeClient.update();
-
   printCityToScreen();
 }
