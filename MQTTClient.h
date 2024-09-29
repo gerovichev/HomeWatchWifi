@@ -6,6 +6,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+extern String hostname_m;
 // MQTT broker credentials
 extern const char* mqtt_server;
 extern const char* mqtt_user;

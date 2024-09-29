@@ -6,6 +6,7 @@ unsigned int temp_max;
 unsigned int pressure;
 unsigned int main_ext_humidity;
 String description_weather;
+int maxAttempts = 3;
 
 // Function to read weather data from the OpenWeather API
 void readWeather() {
@@ -22,7 +23,7 @@ void readWeather() {
   if (Serial) Serial.println(path);
 
   int attempts = 0;
-  const int maxAttempts = 3;
+
   bool success = false;
 
   while (attempts < maxAttempts && !success) {
@@ -55,6 +56,7 @@ void readWeather() {
           description_weather = String(weather[F("description")]);
 
           success = true;  // Set success flag
+          maxAttempts = 1;
         } else {
           if (Serial) Serial.println(F("JSON deserialization failed: ") + String(error.c_str()));
         }

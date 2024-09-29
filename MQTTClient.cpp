@@ -11,7 +11,7 @@ void reconnect() {
 
   while (!client.connected() && attemptCount < maxAttempts) {
     if (Serial) Serial.print(F("Attempting MQTT connection..."));
-    if (client.connect("ESP8266Client", mqtt_user, mqtt_password)) {
+    if (client.connect(hostname_m.c_str(), mqtt_user, mqtt_password)) {
       if (Serial) Serial.println(F("connected"));
     } else {
       if (Serial) 

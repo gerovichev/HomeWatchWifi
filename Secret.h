@@ -31,7 +31,7 @@ struct DeviceConfig {
     String nameofWatch;
     bool isOTAreq;
     int intensity;
-    bool isMQTT;
+    bool isMQTT = false;
 };
 
 // Global device configuration map

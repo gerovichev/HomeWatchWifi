@@ -5,6 +5,7 @@ String ip;
 float latitude = 31.66;
 float longitude = 34.56;
 Config config;
+int maxAttemptsLoc = 3;
 
 // Path for configuration file
 const char* filenamecnf = "/config.txt";
@@ -117,10 +118,9 @@ String getIp() {
 
   String path = "https://api.ipify.org";
   int attempts = 0;
-  const int maxAttempts = 3;
   bool success = false;
 
-  while (attempts < maxAttempts && !success) {
+  while (attempts < maxAttemptsLoc && !success) {
     if (http.begin(client, path)) {
       if (Serial) Serial.println(F("Start IP retrieval attempt ") + String(attempts + 1));
       int httpCode = http.GET();  // Send the request
@@ -128,6 +128,7 @@ String getIp() {
       if (httpCode == HTTP_CODE_OK) {
         payload = http.getString();  // Get the response payload
         success = true;
+        maxAttemptsLoc = 1;
       } else {
         if (Serial) Serial.print(F("Returned status not OK: ") + String(httpCode));
       }
@@ -139,11 +140,11 @@ String getIp() {
 
     if (!success) {
       attempts++;
-      if (attempts < maxAttempts) {
-        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
+      if (attempts < maxAttemptsLoc) {
+        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttemptsLoc) + F(")"));
         delay(2000);
       } else {
-        if (Serial) Serial.println(F("Failed to get IP after ") + String(maxAttempts) + F(" attempts. Restarting..."));
+        if (Serial) Serial.println(F("Failed to get IP after ") + String(maxAttemptsLoc) + F(" attempts. Restarting..."));
         ESP.restart();
       }
     }

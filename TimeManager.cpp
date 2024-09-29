@@ -9,7 +9,7 @@ time_t timeNow;
 
 int offset;
 String city_name;
-
+int maxAttemptsTimes = 3;
 
 
 void getTimezone() {
@@ -39,10 +39,9 @@ void getTimezone() {
   Serial.println(path);
 
   int attempts = 0;
-  const int maxAttempts = 3;
   bool success = false;
 
-  while (attempts < maxAttempts && !success) {
+  while (attempts < maxAttemptsTimes && !success) {
     if (http.begin(client, path)) {
       if (Serial) Serial.println("Start timezone attempt " + String(attempts + 1));
       int httpCode = http.GET();  // Send the request
@@ -71,6 +70,7 @@ void getTimezone() {
             if (Serial) Serial.println(F("offset: ") + String(offset));
 
             success = true;
+            maxAttemptsTimes = 1;
           }
         } else {
           if (Serial) Serial.println(F("deserializeJson() failed: ") + String(error.c_str()));
@@ -86,11 +86,11 @@ void getTimezone() {
 
     if (!success) {
       attempts++;
-      if (attempts < maxAttempts) {
-        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
+      if (attempts < maxAttemptsTimes) {
+        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttemptsTimes) + F(")"));
         delay(2000);
       } else {
-        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttempts) + F(" attempts."));    
+        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttemptsTimes) + F(" attempts."));    
       }
     }
   }
