@@ -1,4 +1,7 @@
 #include "web_server.h"
+#include "WiFiSetup.h"
+#include <ESP8266SSDP.h>
+
 //#include "web_ota.h"  // Include the web OTA header file
 //#include "time_client.h"  // Assuming timeClient is defined in another file
 
@@ -55,6 +58,8 @@ void sendDynamicHTMLResponse(const char* title, const char* message, int refresh
 void wifiReset() {
   if (Serial) Serial.println(F("WiFi Resetting..."));
   sendDynamicHTMLResponse("WiFi Reset", "The WiFi is being reset.", 3600);
+  WIFISetup wifiSetup;
+  wifiSetup.wifi_reset();
   ESP.restart();
 }
 

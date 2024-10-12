@@ -1,3 +1,4 @@
+#pragma once
 
 MD_MAX72XX::fontType_t CRMrusTxt[] PROGMEM = {
   0,    // 0

@@ -1,7 +1,6 @@
 // File: MQTTClient.h
 
-#ifndef MQTTCLIENT_H
-#define MQTTCLIENT_H
+#pragma once
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -19,6 +18,4 @@ extern PubSubClient client;
 
 void reconnect();
 void setup_mqtt();
-void publish_temperature(float homeTemper);
-
-#endif
+void publish_temperature();

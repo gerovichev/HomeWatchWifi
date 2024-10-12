@@ -3,6 +3,7 @@
 bool isRunWeather = false;
 
 Ticker updateDataTicker;
+
 // Timer interrupt handler to trigger weather and currency updates
 void IRAM_ATTR runAllUpdates() {
     isRunWeather = true;
@@ -26,13 +27,15 @@ void setup() {
 
     printText(F("Connect WIFI"));
     
-    wifi_init();  // Initialize Wi-Fi
+    WIFISetup wifiSetup;
+    wifiSetup.wifi_init();  // Initialize Wi-Fi
 
     printText(WiFi.localIP().toString());
 
     location_init();
     ntp_init();
-    dht22Start();  // Start DHT22 sensor
+    Dht22_manager dht22_manager;
+    dht22_manager.dht22Start();  // Start DHT22 sensor
 
     if (isOTAreq) {
         web_ota_init();
@@ -88,7 +91,7 @@ void fetchWeatherAndCurrency() {
                 reconnect();  // Reconnect to MQTT broker if needed
             }
             client.loop();  // Keep MQTT client running
-            publish_temperature(homeTemp);  // Publish temperature to MQTT
+            publish_temperature();  // Publish temperature to MQTT
         }
         yield();
 

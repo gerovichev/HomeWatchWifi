@@ -1,7 +1,9 @@
 #include "WiFiSetup.h"
 
+#include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
+
 // Function to initialize and connect to WiFi using WiFiManager
-void wifi_init() {
+void WIFISetup::wifi_init() {
     if (Serial) Serial.println(F("Start load WIFI"));
 
     WiFiManager wifiManager;
@@ -38,7 +40,7 @@ void wifi_init() {
 }
 
 // Function to reset saved WiFi credentials
-void wifi_reset() {
+void WIFISetup::wifi_reset() {
     WiFiManager wifiManager;
 
     // Reset saved WiFi credentials

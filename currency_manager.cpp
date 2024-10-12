@@ -1,4 +1,7 @@
 #include "currency_manager.h"
+#include <WiFiClientSecureBearSSL.h>
+#include <ArduinoJson.h>
+#include <ESP8266HTTPClient.h>
 
 // Define global variables
 float data_USD_value = 0.0;

@@ -1,4 +1,7 @@
 #include "weather_manager.h"
+#include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
+#include <ArduinoJson.h>
 
 // Define global variables
 unsigned int temperature;

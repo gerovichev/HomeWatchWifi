@@ -1,10 +1,5 @@
 #pragma once
 
-#include <WifiLocation.h>
-#include <ArduinoJson.h>
-#include <LittleFS.h>
-#include <ESP8266HTTPClient.h>
-#include <BearSSLHelpers.h>
 #include "global_config.h"
 
 // Structure to store configuration

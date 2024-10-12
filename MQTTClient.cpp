@@ -1,6 +1,7 @@
 // File: MQTTClient.cpp
 
 #include "MQTTClient.h"
+#include "dht22_manager.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -36,8 +37,9 @@ void setup_mqtt() {
   if (Serial) Serial.println(F("Topic name ") + mqtt_topic_str);
 }
 
-void publish_temperature(float homeTemper) {
-  float temperature = homeTemper;
+void publish_temperature() {
+  Dht22_manager dht22_manager;
+  float temperature = dht22_manager.getHomeTemp();
   
   if (isnan(temperature)) {
     Serial.println(F("Failed to read from DHT sensor!"));

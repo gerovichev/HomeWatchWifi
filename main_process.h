@@ -2,7 +2,7 @@
 
 #include "global_config.h"
 #include "led_display.h"
-#include "WiFiSetup.h"
+%%
 #include "location_manager.h"
 #include "TimeManager.h"
 #include "dht22_manager.h"

@@ -61,9 +61,9 @@ void Clock::handleClockCounter() {
                 shouldStopLoop = true;
             }
             break;
-        case 19: printHomeTemp(); break;
+        case 19:  dht22_manager.printHomeTemp(); break;
         case 21: 
-            printHumidity();
+            dht22_manager.printHumidity();
             shouldStopLoop = true;
             break;
         default:

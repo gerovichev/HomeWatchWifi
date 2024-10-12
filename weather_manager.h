@@ -1,7 +1,5 @@
 #pragma once
 
-#include <WiFiClientSecureBearSSL.h>
-#include <ArduinoJson.h>
 #include "global_config.h"
 #include "location_manager.h"
 

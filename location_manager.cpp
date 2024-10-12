@@ -1,4 +1,9 @@
 #include "location_manager.h"
+#include <WifiLocation.h>
+#include <ArduinoJson.h>
+#include <LittleFS.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
 
 // Define global variables
 String ip;

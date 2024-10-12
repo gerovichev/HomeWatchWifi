@@ -1,14 +1,11 @@
 #include "dht22_manager.h"
 
-// Define the DHT sensor object
-DHT_Unified dht(DHTPIN, DHTTYPE);
-
 // Define global variables
 float homeTemp = 0.0;
 float homeHumidity = 0.0;
 
 // Function to initialize the DHT22 sensor and set home temperature
-void dht22Start() {
+void Dht22_manager::dht22Start() {
     if (IS_DHT_CONNECTED) {
         dht.begin();
         sensor_t sensor;
@@ -26,7 +23,7 @@ void dht22Start() {
 }
 
 // Function to read and set the home temperature
-void setHomeTemp() {
+void Dht22_manager::setHomeTemp() {
     sensors_event_t event;
     dht.temperature().getEvent(&event);
     if (isnan(event.temperature)) {
@@ -36,18 +33,23 @@ void setHomeTemp() {
     }
 }
 
+float Dht22_manager::getHomeTemp()
+{
+  return homeTemp;
+}
+
 // Function to print home temperature to the display
-void printHomeTemp() {
+void Dht22_manager::printHomeTemp() {
     readAndPrintTemperature();
 }
 
 // Function to print humidity to the display
-void printHumidity() {
+void Dht22_manager::printHumidity() {
     readAndPrintHumidity();
 }
 
 // Function to print detailed sensor information
-void printSensorDetails(sensor_t sensor, const char* type) {
+void Dht22_manager::printSensorDetails(sensor_t sensor, const char* type) {
     if (Serial) {
         Serial.println(F("------------------------------------"));
         Serial.println(type);
@@ -80,7 +82,7 @@ void printSensorDetails(sensor_t sensor, const char* type) {
 }
 
 // Function to read and print temperature to the display
-void readAndPrintTemperature() {
+void Dht22_manager::readAndPrintTemperature() {
     sensors_event_t event;
     dht.temperature().getEvent(&event);
     if (isnan(event.temperature)) {
@@ -98,7 +100,7 @@ void readAndPrintTemperature() {
 }
 
 // Function to read and print humidity to the display
-void readAndPrintHumidity() {
+void Dht22_manager::readAndPrintHumidity() {
     sensors_event_t event;
     dht.humidity().getEvent(&event);
     if (isnan(event.relative_humidity)) {
@@ -117,13 +119,13 @@ void readAndPrintHumidity() {
 }
 
 // Function to handle temperature reading errors
-void handleTemperatureError() {
+void Dht22_manager::handleTemperatureError() {
     dht22Start();  // Restart the DHT sensor
     if (Serial) Serial.println(F("Error reading temperature!"));
 }
 
 // Function to handle humidity reading errors
-void handleHumidityError() {
+void Dht22_manager::handleHumidityError() {
     dht22Start();  // Restart the DHT sensor
     if (Serial) Serial.println(F("Error reading humidity!"));
 }

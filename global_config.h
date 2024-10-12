@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ESP8266WiFi.h>
 #include <ArduinoOTA.h>
 #include "secret.h"
 #include "led_display.h"

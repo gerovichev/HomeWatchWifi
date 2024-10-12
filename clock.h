@@ -19,6 +19,7 @@ public:
 
 private:
     Clock() = default; // Private constructor for singleton pattern
+    Dht22_manager dht22_manager;
 
     static void IRAM_ATTR TimerHandler();
     void handleClockCounter();

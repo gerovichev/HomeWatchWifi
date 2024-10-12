@@ -1,8 +1,5 @@
 #pragma once
 
-#include <WiFiClientSecureBearSSL.h>
-#include <ArduinoJson.h>
-#include <ESP8266HTTPClient.h>
 #include "global_config.h"
 
 // Global variables for currency data
