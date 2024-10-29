@@ -15,7 +15,7 @@ public:
   void printHumidity();
   void dht22Start();
   Dht22_manager() : dht(DHTPIN, DHTTYPE){}
-  float 6();
+  float getHomeTemp();
 
 private:
   /// Define the DHT sensor object
