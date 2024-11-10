@@ -16,6 +16,8 @@ public:
     void init();
     void detach();
     void loop();
+    Dht22_manager& getDht22();
+    WeatherManager& getWeatherManager();
 
 private:
     Clock() = default; // Private constructor for singleton pattern
@@ -28,6 +30,7 @@ private:
     int clockCounter = 0;
     static volatile bool runClock;
     Ticker timer1;
+    WeatherManager weatherManager;
 };
 
 // Initialize clock process functions

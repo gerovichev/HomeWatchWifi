@@ -4,18 +4,20 @@
 float homeTemp = 0.0;
 float homeHumidity = 0.0;
 
+Dht22_manager::Dht22_manager() : DHT_Unified(DHTPIN, DHTTYPE){}
+
 // Function to initialize the DHT22 sensor and set home temperature
 void Dht22_manager::dht22Start() {
     if (IS_DHT_CONNECTED) {
-        dht.begin();
+        begin();
         sensor_t sensor;
 
         // Print temperature sensor details
-        dht.temperature().getSensor(&sensor);
+        temperature().getSensor(&sensor);
         printSensorDetails(sensor, "Temperature");
 
         // Print humidity sensor details
-        dht.humidity().getSensor(&sensor);
+        humidity().getSensor(&sensor);
         printSensorDetails(sensor, "Humidity");
 
         setHomeTemp();  // Read and set initial home temperature
@@ -25,7 +27,7 @@ void Dht22_manager::dht22Start() {
 // Function to read and set the home temperature
 void Dht22_manager::setHomeTemp() {
     sensors_event_t event;
-    dht.temperature().getEvent(&event);
+    temperature().getEvent(&event);
     if (isnan(event.temperature)) {
         handleTemperatureError();
     } else {
@@ -84,7 +86,7 @@ void Dht22_manager::printSensorDetails(sensor_t sensor, const char* type) {
 // Function to read and print temperature to the display
 void Dht22_manager::readAndPrintTemperature() {
     sensors_event_t event;
-    dht.temperature().getEvent(&event);
+    temperature().getEvent(&event);
     if (isnan(event.temperature)) {
         handleTemperatureError();
     } else {
@@ -102,7 +104,7 @@ void Dht22_manager::readAndPrintTemperature() {
 // Function to read and print humidity to the display
 void Dht22_manager::readAndPrintHumidity() {
     sensors_event_t event;
-    dht.humidity().getEvent(&event);
+    humidity().getEvent(&event);
     if (isnan(event.relative_humidity)) {
         handleHumidityError();
     } else {

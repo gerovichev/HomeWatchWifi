@@ -17,6 +17,7 @@ constexpr int TIME_TO_CALL_SERVICES = 900;  // in seconds
 
 extern Ticker updateDataTicker;
 extern bool isRunWeather;
+//extern WeatherManager weatherManager;
 
 // Function prototypes
 void IRAM_ATTR runAllUpdates();

@@ -34,7 +34,7 @@ void setup() {
 
     location_init();
     ntp_init();
-    Dht22_manager dht22_manager;
+    Dht22_manager& dht22_manager = Clock::getInstance().getDht22();
     dht22_manager.dht22Start();  // Start DHT22 sensor
 
     if (isOTAreq) {
@@ -77,7 +77,7 @@ void fetchWeatherAndCurrency() {
         if (Serial) Serial.println(F("Get time zone finished"));    
         yield();
 
-        readWeather();  // Fetch weather data
+        Clock::getInstance().getWeatherManager().readWeather();  // Fetch weather data
         yield();
 
         currency_init();  // Initialize currency data

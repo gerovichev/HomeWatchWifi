@@ -2,18 +2,26 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <ArduinoJson.h>
+#include "Secret.h"
+#include "location_manager.h"
 
-// Define global variables
-unsigned int temperature;
-unsigned int temp_max;
-unsigned int pressure;
-unsigned int main_ext_humidity;
-String description_weather;
-int maxAttempts = 3;
+#define MAX_ATTEMPS 3
+
+WeatherManager::WeatherManager()
+{
+    // Initialize weather data members here, if necessary
+    temperature = 0;
+    temp_max = 0;
+    pressure = 0;
+    humidity = 0;
+    description_weather = "";
+}
 
 // Function to read weather data from the OpenWeather API
-void readWeather() {
+void WeatherManager::readWeather() {
   if (Serial) Serial.println(F("Start get weather"));
+
+  int maxAttempts = MAX_ATTEMPS;
 
   BearSSL::WiFiClientSecure client;
   client.setInsecure();  // Skip certificate validation
@@ -57,6 +65,7 @@ void readWeather() {
 
           JsonObject weather = current[F("weather")][0];
           description_weather = String(weather[F("description")]);
+          description_weather.toUpperCase();
 
           success = true;  // Set success flag
           maxAttempts = 1;
@@ -85,31 +94,30 @@ void readWeather() {
 }
 
 // Function to print temperature on the screen
-void printWeatherToScreen() {
+void WeatherManager::printWeatherToScreen() const{
   String tape = String(temperature, DEC) + getGradValue() + F("C");
   drawString(tape);
 }
 
 // Function to print feels-like temperature on the screen
-void printMaxTempToScreen() {
+void WeatherManager::printMaxTempToScreen() const{
   String tape = F("Feels like ") + String(temp_max, DEC) + getGradValue() + F("C");
   drawString(tape);
 }
 
 // Function to print pressure on the screen
-void printPressureToScreen() {
+void WeatherManager::printPressureToScreen() const{
   String tape = String(pressure, DEC) + F("mm");
   drawString(tape);
 }
 
 // Function to print humidity on the screen
-void printHumidityToScreen() {
+void WeatherManager::printHumidityToScreen() const{
   String tape = String(main_ext_humidity, DEC) + F("%");
   drawString(tape);
 }
 
 // Function to print weather description on the screen
-void printDescriptionWeatherToScreen() {
-  description_weather.toUpperCase();
+void WeatherManager::printDescriptionWeatherToScreen() const {  
   drawString(description_weather);
 }

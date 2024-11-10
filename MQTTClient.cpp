@@ -2,6 +2,7 @@
 
 #include "MQTTClient.h"
 #include "dht22_manager.h"
+#include "clock.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -38,7 +39,7 @@ void setup_mqtt() {
 }
 
 void publish_temperature() {
-  Dht22_manager dht22_manager;
+  Dht22_manager& dht22_manager = Clock::getInstance().getDht22();
   float temperature = dht22_manager.getHomeTemp();
   
   if (isnan(temperature)) {

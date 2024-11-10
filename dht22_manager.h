@@ -8,18 +8,16 @@
 #define DHTTYPE DHT22  // DHT 22 (AM2302)
 
 
-class Dht22_manager
+class Dht22_manager : public DHT_Unified
 {
 public:
+  Dht22_manager();
   void printHomeTemp();
   void printHumidity();
   void dht22Start();
-  Dht22_manager() : dht(DHTPIN, DHTTYPE){}
   float getHomeTemp();
 
 private:
-  /// Define the DHT sensor object
-  DHT_Unified dht;
   // Global variables for home temperature and humidity
   float homeTemp;
   float homeHumidity;

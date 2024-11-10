@@ -49,11 +49,11 @@ void Clock::handleClockCounter() {
     switch (clockCounter) {
         case 1:  printDateToScreen(); break;
         case 3:  printDayToScreen(); break;
-        case 5:  printWeatherToScreen(); break;
-        case 7:  printMaxTempToScreen(); break;
-        case 9:  printPressureToScreen(); break;
-        case 11: printHumidityToScreen(); break;
-        case 13: printDescriptionWeatherToScreen(); break;
+        case 5:  weatherManager.printWeatherToScreen(); break;
+        case 7:  weatherManager.printMaxTempToScreen(); break;
+        case 9:  weatherManager.printPressureToScreen(); break;
+        case 11: weatherManager.printHumidityToScreen(); break;
+        case 13: weatherManager.printDescriptionWeatherToScreen(); break;
         case 15: printCurrencyUSDToScreen(); break;
         case 17: 
             printCurrencyEURToScreen(); 
@@ -70,6 +70,16 @@ void Clock::handleClockCounter() {
             shouldStopLoop = true;
             break;
     }
+}
+
+Dht22_manager& Clock::getDht22()
+{
+  return dht22_manager;
+}
+
+WeatherManager& Clock::getWeatherManager()
+{
+  return weatherManager;
 }
 
 // Initialize clock process
