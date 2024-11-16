@@ -48,9 +48,10 @@ void getTimezone() {
 
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
+
         if (Serial) Serial.println(payload);
 
-        DynamicJsonDocument doc(1024);
+        JsonDocument doc;
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
           if (Serial) Serial.println(F("Deserialization succeeded"));
@@ -78,11 +79,11 @@ void getTimezone() {
       } else {
         if (Serial) Serial.println(F("No timezone response: ") + String(httpCode));
       }
-
-      http.end();
     } else {
       if (Serial) Serial.println(F("Failed to begin HTTP connection"));
     }
+
+    http.end();
 
     if (!success) {
       attempts++;

@@ -22,7 +22,7 @@ void loadConfiguration() {
 
   File file = LittleFS.open(filenamecnf, "r");
   if (file) {
-    DynamicJsonDocument doc(1024);  // Use appropriate capacity
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, file);
 
     if (error) {
@@ -50,7 +50,7 @@ void saveConfiguration() {
     return;
   }
 
-  DynamicJsonDocument doc(1024);  // Use appropriate capacity
+  JsonDocument doc;
   doc["latitude"] = config.latitude;
   doc["longitude"] = config.longitude;
   doc["ip"] = config.ip;

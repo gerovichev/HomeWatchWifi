@@ -46,7 +46,7 @@ void WeatherManager::readWeather() {
         String payload = http.getString();  // Get the request response payload
         if (Serial) Serial.println(F("payload: ") + payload);
 
-        DynamicJsonDocument doc(2048);  // Allocate JsonDocument
+        JsonDocument doc;
         DeserializationError error = deserializeJson(doc, payload);
 
         // Test if parsing succeeds
@@ -76,7 +76,6 @@ void WeatherManager::readWeather() {
         if (Serial) Serial.println(F("No weather response: ") + String(httpCode, DEC));
       }
 
-      http.end();  // Close connection
     } else {
       if (Serial) Serial.println(F("Failed to begin HTTP connection"));
     }
@@ -91,6 +90,7 @@ void WeatherManager::readWeather() {
       }
     }
   }
+  http.end();  // Close connection
 }
 
 // Function to print temperature on the screen
