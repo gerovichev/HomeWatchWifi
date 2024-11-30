@@ -24,3 +24,5 @@ void IRAM_ATTR runAllUpdates();
 void setup();
 void fetchWeatherAndCurrency();
 void loop();
+void enableWiFi();
+void disableWiFi();

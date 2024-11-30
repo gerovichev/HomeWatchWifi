@@ -54,9 +54,9 @@ void Clock::handleClockCounter() {
         case 9:  weatherManager.printPressureToScreen(); break;
         case 11: weatherManager.printHumidityToScreen(); break;
         case 13: weatherManager.printDescriptionWeatherToScreen(); break;
-        case 15: printCurrencyUSDToScreen(); break;
+        case 15: currencyManager.displayUSDToScreen(); break;
         case 17: 
-            printCurrencyEURToScreen(); 
+            currencyManager.displayEURToScreen(); 
             if (!IS_DHT_CONNECTED) {
                 shouldStopLoop = true;
             }
@@ -81,6 +81,11 @@ WeatherManager& Clock::getWeatherManager()
 {
   return weatherManager;
 }
+
+ CurrencyManager& Clock::getCurrencyManager()
+ {
+  return currencyManager;
+ }
 
 // Initialize clock process
 void init_clock_process() {

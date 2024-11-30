@@ -1,5 +1,7 @@
 #include "main_process.h"
 
+#include <ESP8266WiFi.h>
+
 bool isRunWeather = false;
 
 Ticker updateDataTicker;
@@ -64,6 +66,7 @@ void fetchWeatherAndCurrency() {
         if (Serial) Serial.println(F("Start detach"));
         
         detachInterrupt_clock_process();  // Detach clock interrupt
+        enableWiFi();
         if (Serial) Serial.println(F("Detached"));
         yield();
         
@@ -80,7 +83,7 @@ void fetchWeatherAndCurrency() {
         Clock::getInstance().getWeatherManager().readWeather();  // Fetch weather data
         yield();
 
-        currency_init();  // Initialize currency data
+        Clock::getInstance().getCurrencyManager().initialize();  // Initialize currency data
         yield();
 
         setIntensityByTime(timeNow);  // Adjust display intensity based on time
@@ -94,6 +97,8 @@ void fetchWeatherAndCurrency() {
             publish_temperature();  // Publish temperature to MQTT
         }
         yield();
+
+        disableWiFi();
 
         init_clock_process();  // Reinitialize clock process
         yield();
@@ -113,4 +118,27 @@ void loop() {
 
     webClientHandle();  // Handle web server requests
     ESP.wdtFeed();  // Feed the watchdog timer
+}
+
+// Function to enable Wi-Fi (if disabled)
+void enableWiFi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.forceSleepWake();
+    WiFi.begin(); // Reconnect using saved credentials
+    Serial.print("Reconnecting to Wi-Fi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\nWi-Fi reconnected!");
+  } else {
+    Serial.println("Wi-Fi already connected.");
+  }
+}
+
+// Function to disable Wi-Fi
+void disableWiFi() {
+  WiFi.disconnect(true, false);
+  WiFi.mode(WIFI_OFF);
+  Serial.println("Wi-Fi disabled to save power.");
 }
