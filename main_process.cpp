@@ -1,6 +1,7 @@
 #include "main_process.h"
 
 #include <ESP8266WiFi.h>
+#include <TimeLib.h>  // For advanced time manipulation
 
 bool isRunWeather = false;
 
@@ -66,28 +67,38 @@ void fetchWeatherAndCurrency() {
         if (Serial) Serial.println(F("Start detach"));
         
         detachInterrupt_clock_process();  // Detach clock interrupt
-        enableWiFi();
+
         if (Serial) Serial.println(F("Detached"));
-        yield();
+        
+        enableWiFi(); 
+        //yield();
         
         if (isOTAreq) {
+            if (Serial) Serial.println(F("OTA update"));
             update_ota();  // Handle OTA updates
         }
-        yield();
+        //yield();
+
+        if (Serial) Serial.println(F("Time update started"));
+        timeClient.update();  // Update the time from NTP server
+        timeNow = timeClient.getEpochTime();
+          // Set system time
+        setTime(timeNow);
+        if (Serial) Serial.println(F("Time update finished"));
 
         if (Serial) Serial.println("Time: " + timeClient.getEpochTime());
         getTimezone();  // Update timezone info
         if (Serial) Serial.println(F("Get time zone finished"));    
-        yield();
+        //yield();
 
         Clock::getInstance().getWeatherManager().readWeather();  // Fetch weather data
-        yield();
+        //yield();
 
         Clock::getInstance().getCurrencyManager().initialize();  // Initialize currency data
-        yield();
+        //yield();
 
         setIntensityByTime(timeNow);  // Adjust display intensity based on time
-        yield();
+        //yield();
 
         if (isMQTT) {
             if (!client.connected()) {
@@ -96,20 +107,18 @@ void fetchWeatherAndCurrency() {
             client.loop();  // Keep MQTT client running
             publish_temperature();  // Publish temperature to MQTT
         }
-        yield();
+        //yield();
 
         disableWiFi();
 
         init_clock_process();  // Reinitialize clock process
-        yield();
+        //yield();
     }
 }
 
 // Main loop, called repeatedly
 void loop() {
     if (displayAnimate()) {
-        timeClient.update();  // Update the time from NTP server
-        timeNow = timeClient.getEpochTime();
 
         fetchWeatherAndCurrency();  // Fetch weather and currency data
         clock_loop();  // Handle clock logic
@@ -122,17 +131,39 @@ void loop() {
 
 // Function to enable Wi-Fi (if disabled)
 void enableWiFi() {
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.forceSleepWake();
-    WiFi.begin(); // Reconnect using saved credentials
-    Serial.print("Reconnecting to Wi-Fi");
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+  // Check if already connected
+  if (WiFi.status() == WL_CONNECTED) {
+    if (Serial) Serial.println("Wi-Fi already connected.");
+    return;
+  }
+
+  //WiFi.forceSleepWake();
+  WiFi.begin(); // Reconnect using saved credentials
+
+  // Start reconnection
+  if (Serial) Serial.print("Reconnecting to Wi-Fi");
+  
+  unsigned long startAttemptTime = millis();
+  const unsigned long WIFI_TIMEOUT = 10000;  // 10 seconds total timeout
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    // Check for timeout
+    if (millis() - startAttemptTime > WIFI_TIMEOUT) {
+      Serial.println("\nWi-Fi connection timeout");
+   
+      return;
     }
+    
+    // Visual feedback
+    if (Serial) Serial.print(".");
+    delay(500);
+  }
+  
+  // Connection successful
+  if (Serial) {
     Serial.println("\nWi-Fi reconnected!");
-  } else {
-    Serial.println("Wi-Fi already connected.");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
   }
 }
 
