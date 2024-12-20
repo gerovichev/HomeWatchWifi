@@ -79,6 +79,15 @@ void fetchWeatherAndCurrency() {
         }
         //yield();
 
+        if (isMQTT) {
+            if (!client.connected()) {
+                reconnect();  // Reconnect to MQTT broker if needed
+            }
+            client.loop();  // Keep MQTT client running
+            publish_temperature();  // Publish temperature to MQTT
+        }
+        yield();
+
         if (Serial) Serial.println(F("Time update started"));
         timeClient.update();  // Update the time from NTP server
         timeNow = timeClient.getEpochTime();
@@ -98,15 +107,6 @@ void fetchWeatherAndCurrency() {
         //yield();
 
         setIntensityByTime(timeNow);  // Adjust display intensity based on time
-        //yield();
-
-        if (isMQTT) {
-            if (!client.connected()) {
-                reconnect();  // Reconnect to MQTT broker if needed
-            }
-            client.loop();  // Keep MQTT client running
-            publish_temperature();  // Publish temperature to MQTT
-        }
         //yield();
 
         disableWiFi();

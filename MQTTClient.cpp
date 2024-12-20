@@ -15,6 +15,7 @@ void reconnect() {
     if (Serial) Serial.print(F("Attempting MQTT connection..."));
     if (client.connect(hostname_m.c_str(), mqtt_user, mqtt_password)) {
       if (Serial) Serial.println(F("connected"));
+      return;
     } else {
       if (Serial) 
       {
