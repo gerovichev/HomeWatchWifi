@@ -5,7 +5,7 @@ String pathOta;
 
 // OTA callbacks
 void update_started() {
-  if (Serial) Serial.println(F("CALLBACK: HTTP update process started"));
+  if (Serial) Serial.println(F("CALLBACK: HTTP update process starteds"));
   printText(F("Update"));
 }
 
@@ -37,7 +37,7 @@ void web_ota_init() {
 
 // Perform OTA update
 void update_ota() {
-    detachInterrupt_clock_process();
+    //detachInterrupt_clock_process();
 
     BearSSL::WiFiClientSecure client;
     client.setInsecure();
@@ -64,5 +64,5 @@ void update_ota() {
         break;
     }
 
-    init_clock_process();
+    // init_clock_process();
 }

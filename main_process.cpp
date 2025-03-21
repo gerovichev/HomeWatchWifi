@@ -48,8 +48,6 @@ void setup() {
         setup_mqtt();  // Initialize MQTT client
     }
 
-    webserver_init();  // Initialize web server
-
     timeNow = timeClient.getEpochTime();  // Get the current time
 
     isRunWeather = true;  // Set flag to trigger weather updates
@@ -125,7 +123,6 @@ void loop() {
         realDisplayText();  // Update the display
     }
 
-    webClientHandle();  // Handle web server requests
     ESP.wdtFeed();  // Feed the watchdog timer
 }
 
