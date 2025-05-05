@@ -29,7 +29,7 @@ struct DeviceConfig {
     bool isReadWeather;
     double humidity_delta;
     String nameofWatch;
-    bool isOTAreq;
+    bool isOTAreq = true;
     int intensity;
     bool isMQTT = false;
 };

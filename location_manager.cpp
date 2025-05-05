@@ -155,7 +155,7 @@ String getIp() {
     }
   }
 
-  if (Serial) Serial.print(F("Got IP: ") + payload);
+  if (Serial) Serial.println(F("Got IP: ") + payload);
   return payload;
 }
 
