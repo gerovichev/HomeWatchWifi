@@ -1,6 +1,7 @@
 #include "WiFiSetup.h"
 
 #include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
+#include "Secret.h"
 
 // Function to initialize and connect to WiFi using WiFiManager
 void WIFISetup::wifi_init() {
@@ -15,7 +16,7 @@ void WIFISetup::wifi_init() {
     wifiManager.setClass(F("invert"));
 
     // Try to auto-connect using saved credentials or start the AP mode
-    bool res = wifiManager.autoConnect("AutoConnectAP", "flagman88");
+    bool res = wifiManager.autoConnect(wifi_name, wifi_pass);
 
     if (!res) {
         if (Serial) Serial.println(F("Failed to connect or hit timeout"));

@@ -19,6 +19,8 @@ extern const char* mqtt_user;
 extern const char* mqtt_password;
 extern const String mqtt_topic;
 extern String mqtt_topic_str;
+extern const char* wifi_name;
+extern const char* wifi_pass;
 
 // Device configuration structure
 struct DeviceConfig {
