@@ -1,9 +1,15 @@
 // CurrencyManager.cpp
 #include "currency_manager.h"
+#include "secure_client.h"
+#include "constants.h"
+#include "logger.h"
 
 CurrencyManager::CurrencyManager()
     : bearerTokenCurrency(confBearerTokenCurrency), pathCurrencyUSD(confPathCurrencyUSD), pathCurrencyEUR(confPathCurrencyEUR),
-      dataUSDValue(0.0), dataEURValue(0.0) {}
+      dataUSDValue(0.0), dataEURValue(0.0) 
+{
+    // const char* pointers are assigned directly - no String copies, saves RAM
+}
 
 void CurrencyManager::initialize() {
     if (float tmpDataUSD = readCurrency(pathCurrencyUSD); tmpDataUSD > 0) {
@@ -29,18 +35,19 @@ void CurrencyManager::displayEURToScreen() {
     }
 }
 
-bool CurrencyManager::setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecure &client, const String &path) {
-    client.setInsecure(); // Disable SSL certificate verification
-    http.setTimeout(HTTP_TIMEOUT);
+bool CurrencyManager::setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecure &client, const char* path) {
+    setupSecureClient(client, "currency API");
+    http.setTimeout(Timing::HTTP_TIMEOUT_CURRENCY_MS);
 
-    if (Serial) Serial.println(path);
+    LOG_DEBUG("Currency API path: " + String(path));
 
     if (!http.begin(client, path)) {
-        if (Serial) Serial.println(F("Failed to begin HTTP connection"));
+        LOG_ERROR_F("Failed to begin HTTP connection");
         return false;
     }
 
-    http.addHeader(F("Authorization"), F("Bearer ") + bearerTokenCurrency);
+    String authHeader = F("Bearer ") + String(bearerTokenCurrency);
+    http.addHeader(F("Authorization"), authHeader);
     http.addHeader(F("Content-Type"), F("application/json"));
     return true;
 }
@@ -48,38 +55,28 @@ bool CurrencyManager::setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecur
 float CurrencyManager::handleHttpResponse(HTTPClient &http) {
     int httpCode = http.GET();
     if (httpCode != HTTP_CODE_OK) {
-        if (Serial) Serial.println(F("HTTP request failed with code: ") + String(httpCode, DEC));
+        LOG_WARNING("HTTP request failed with code: " + String(httpCode, DEC));
         return 0.0;
     }
 
     String payload = http.getString();
-    if (Serial) {
-        Serial.println(F("Payload: "));
-        Serial.println(payload);
-        Serial.println(F("Payload length: "));
-        Serial.println(payload.length());
-    }
+    LOG_VERBOSE("Currency API payload length: " + String(payload.length()));
 
-    StaticJsonDocument<512> doc;
+    StaticJsonDocument<Buffer::JSON_CURRENCY_SIZE> doc;
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
-        if (Serial) {
-            Serial.print(F("deserializeJson() failed: "));
-            Serial.println(error.f_str());
-        }
+        LOG_ERROR("deserializeJson() failed: " + String(error.c_str()));
         return 0.0;
     }
 
     return doc[F("state")]; // Extract currency value from JSON
 }
 
-float CurrencyManager::readCurrency(const String &path) {
-    if (Serial) Serial.println(F("Start getting currency"));
+float CurrencyManager::readCurrency(const char* path) {
+    LOG_DEBUG_F("Fetching currency data...");
 
     BearSSL::WiFiClientSecure client;
     HTTPClient http;
-
-    if (Serial) Serial.println(path);
 
     if (!setupHttpClient(http, client, path)) {
         return 0.0;

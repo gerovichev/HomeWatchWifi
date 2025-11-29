@@ -11,8 +11,9 @@
 #include "clock.h"
 #include <Ticker.h>
 #include "MQTTClient.h"
+#include "constants.h"
 
-constexpr int TIME_TO_CALL_SERVICES = 900;  // in seconds
+// TIME_TO_CALL_SERVICES moved to constants.h as Timing::DATA_UPDATE_INTERVAL_SEC
 
 extern Ticker updateDataTicker;
 extern bool isRunWeather;

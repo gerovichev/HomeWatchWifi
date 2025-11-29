@@ -4,13 +4,16 @@
 #include <LittleFS.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
+#include "secure_client.h"
+#include "constants.h"
+#include "logger.h"
 
 // Define global variables
 String ip;
 float latitude = 31.66;
 float longitude = 34.56;
 Config config;
-int maxAttemptsLoc = 3;
+int maxAttemptsLoc = Retry::MAX_ATTEMPTS_LOCATION;
 
 // Path for configuration file
 const char* filenamecnf = "/config.txt";
@@ -18,22 +21,26 @@ const char* filenamecnf = "/config.txt";
 // Loads the configuration from a file
 void loadConfiguration() {
   int result = LittleFS.begin();
-  if (Serial) Serial.println(F("LittleFS opened: ") + String(result));
+  LOG_DEBUG("LittleFS opened with result: " + String(result));
 
   File file = LittleFS.open(filenamecnf, "r");
   if (file) {
-    JsonDocument doc;
+    StaticJsonDocument<Buffer::JSON_LOCATION_SIZE> doc;  // Location config is small: lat, lon, ip
     DeserializationError error = deserializeJson(doc, file);
 
     if (error) {
-      if (Serial) Serial.println(F("Failed to read file, using default configuration"));
+      LOG_WARNING_F("Failed to read location config file, using defaults");
     } else {
       config.latitude = doc["latitude"];
       config.longitude = doc["longitude"];
       config.ip = String(doc["ip"]);
+      LOG_INFO("Loaded location config: lat=" + String(config.latitude, 6) + 
+               ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
     }
 
     file.close();
+  } else {
+    LOG_WARNING_F("Location config file not found");
   }
 
   LittleFS.end();
@@ -42,23 +49,24 @@ void loadConfiguration() {
 // Saves the configuration to a file
 void saveConfiguration() {
   int result = LittleFS.begin();
-  if (Serial) Serial.println(F("LittleFS opened: ") + String(result));
+  LOG_DEBUG("LittleFS opened for writing: " + String(result));
 
   File file = LittleFS.open(filenamecnf, "w");
   if (!file) {
-    if (Serial) Serial.println(F("Failed to create file"));
+    LOG_ERROR_F("Failed to create location config file");
     return;
   }
 
-  JsonDocument doc;
-  doc["latitude"] = config.latitude;
+    StaticJsonDocument<Buffer::JSON_LOCATION_SIZE> doc;  // Location config is small: lat, lon, ip
+    doc["latitude"] = config.latitude;
   doc["longitude"] = config.longitude;
   doc["ip"] = config.ip;
 
   if (serializeJson(doc, file) == 0) {
-    if (Serial) Serial.println(F("Failed to write to file"));
+    LOG_ERROR_F("Failed to write location config to file");
   } else {
-    if (Serial) Serial.println(F("Success to write to file"));
+    LOG_INFO("Location config saved: lat=" + String(config.latitude, 6) + 
+             ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
   }
 
   file.close();
@@ -67,24 +75,27 @@ void saveConfiguration() {
 
 // Sets time via NTP for x.509 validation
 void setClock() {
+  LOG_DEBUG_F("Setting system clock for SSL validation...");
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
-  if (Serial) Serial.print(F("Waiting for NTP time sync: "));
   time_t now = time(nullptr);
+  int waitCount = 0;
   while (now < 8 * 3600 * 2) {
-    delay(500);
-    if (Serial) Serial.print(F("."));
+    delay(Timing::NTP_SYNC_WAIT_MS);
+    if (++waitCount % 10 == 0) {
+      LOG_VERBOSE_F("Waiting for NTP time sync...");
+    }
     now = time(nullptr);
   }
 
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  if (Serial) Serial.print(F("\nCurrent time: ") + String(asctime(&timeinfo)));
+  LOG_DEBUG("System clock set: " + String(asctime(&timeinfo)));
 }
 
 // Get location via Google API using WiFi data
 void getLocationAPI(String ip) {
-  if (Serial) Serial.println(F("Start get location: calling Google API"));
+  LOG_INFO_F("Fetching location via Google Geolocation API...");
 
   setClock();
 
@@ -92,20 +103,16 @@ void getLocationAPI(String ip) {
   location_t loc = location.getGeoFromWiFi();
 
   if (!location.wlStatusStr(location.getStatus()).equals("OK")) {
-    if (Serial) Serial.println(F("Returned status not OK"));
+    LOG_ERROR("Google Geolocation API returned status: " + location.wlStatusStr(location.getStatus()));
     return;
   }
 
   latitude = loc.lat;
   longitude = loc.lon;
 
-  if (Serial) {
-    Serial.println(F("Location request data"));
-    Serial.println(location.getSurroundingWiFiJson());
-    Serial.println(F("Latitude: ") + String(latitude, 7));
-    Serial.println(F("Longitude: ") + String(longitude, 7));
-    Serial.println(F("Accuracy: ") + String(loc.accuracy));
-  }
+  LOG_INFO("Location updated: lat=" + String(latitude, 7) + ", lon=" + String(longitude, 7));
+  LOG_DEBUG("Location accuracy: " + String(loc.accuracy) + " meters");
+  LOG_VERBOSE("WiFi scan data: " + location.getSurroundingWiFiJson());
 
   config.latitude = latitude;
   config.longitude = longitude;
@@ -114,11 +121,11 @@ void getLocationAPI(String ip) {
 
 // Get external IP address using an API
 String getIp() {
-  if (Serial) Serial.println(F("Start get IP"));
+  LOG_INFO_F("Fetching external IP address...");
 
   String payload;
   BearSSL::WiFiClientSecure client;
-  client.setInsecure();  // Skip certificate validation
+  setupSecureClient(client, "ipify.org");
   HTTPClient http;
 
   String path = "https://api.ipify.org";
@@ -127,52 +134,60 @@ String getIp() {
 
   while (attempts < maxAttemptsLoc && !success) {
     if (http.begin(client, path)) {
-      if (Serial) Serial.println(F("Start IP retrieval attempt ") + String(attempts + 1));
+      LOG_DEBUG("IP retrieval attempt " + String(attempts + 1) + "/" + String(maxAttemptsLoc));
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
         payload = http.getString();  // Get the response payload
+        LOG_INFO("External IP retrieved: " + payload);
         success = true;
         maxAttemptsLoc = 1;
       } else {
-        if (Serial) Serial.print(F("Returned status not OK: ") + String(httpCode));
+        LOG_WARNING("IP retrieval HTTP error: " + String(httpCode));
       }
 
       http.end();
     } else {
-      Serial.println(F("Failed to begin HTTP connection"));
+      LOG_ERROR_F("Failed to begin IP retrieval HTTP connection");
     }
 
     if (!success) {
       attempts++;
       if (attempts < maxAttemptsLoc) {
-        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttemptsLoc) + F(")"));
-        delay(2000);
+        LOG_WARNING("Retrying IP retrieval (" + String(attempts) + "/" + String(maxAttemptsLoc) + ")...");
+        delay(Timing::RETRY_DELAY_MS);
       } else {
-        if (Serial) Serial.println(F("Failed to get IP after ") + String(maxAttemptsLoc) + F(" attempts. Restarting..."));
-        ESP.restart();
+        LOG_ERROR("Failed to get IP after " + String(maxAttemptsLoc) + " attempts.");
+        // Don't restart immediately - allow device to continue with cached location if available
+        // Only restart if this is critical for device operation
+        if (config.latitude == 0 && config.longitude == 0) {
+          LOG_ERROR_F("No cached location available, restarting device...");
+          delay(1000);
+          ESP.restart();
+        } else {
+          LOG_WARNING_F("Using cached location due to IP retrieval failure");
+        }
       }
     }
   }
 
-  if (Serial) Serial.println(F("Got IP: ") + payload);
   return payload;
 }
 
 // Initialize location by loading config or calling API
 void location_init() {
+  LOG_INFO_F("Initializing location services...");
+  
   ip = getIp();
   loadConfiguration();
 
   if (ip.equals(config.ip) && config.latitude != 0) {
     latitude = config.latitude;
     longitude = config.longitude;
-    if (Serial) {
-      Serial.println(F("Set location from config"));
-      Serial.println(F("Latitude: ") + String(latitude, 7));
-      Serial.println(F("Longitude: ") + String(longitude, 7));
-    }
+    LOG_INFO("Using cached location: lat=" + String(latitude, 7) + 
+             ", lon=" + String(longitude, 7));
   } else {
+    LOG_INFO_F("IP changed or no cached location, fetching new location...");
     getLocationAPI(ip);
     saveConfiguration();
   }

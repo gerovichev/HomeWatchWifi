@@ -1,4 +1,6 @@
 #include "led_display.h"
+#include "logger.h"
+#include "constants.h"
 
 // Global variables
 bool newMessageAvailable = false;
@@ -34,7 +36,7 @@ String formatTime(time_t rawTime) {
   int minutes = (rawTime % 3600) / 60;
   int seconds = rawTime % 60;
   
-  char timeStr[20];
+  char timeStr[Buffer::TIME_STRING_SIZE];
   sprintf(timeStr, "%02d:%02d:%02d", hours, minutes, seconds);
   
   return String(timeStr);
@@ -42,14 +44,12 @@ String formatTime(time_t rawTime) {
 
 // Sets the intensity based on the current time
 void setIntensityByTime(time_t timeNow) {
-  int intensity = (timeNow > sunrise && timeNow < sunset) ? 2 : 0;
+  int intensity = (timeNow > sunrise && timeNow < sunset) ? Display::INTENSITY_DAY : Display::INTENSITY_NIGHT;
 
-  if (Serial) {
-    Serial.println(F("sunrise: ") + formatTime(sunrise)); 
-    Serial.println(F("Time: ") + formatTime(timeNow));
-    Serial.println(F("sunset: ") + formatTime(sunset));
-    Serial.printf("intensity %d\n", intensity);
-  }
+  LOG_VERBOSE("sunrise: " + formatTime(sunrise)); 
+  LOG_VERBOSE("Time: " + formatTime(timeNow));
+  LOG_VERBOSE("sunset: " + formatTime(sunset));
+  LOG_VERBOSE("intensity: " + String(intensity));
   M.setIntensity(intensity);
 }
 
@@ -91,21 +91,18 @@ void drawStringMax(const String& tape) {
   }
 }
 
-#define SCROLL_SPEED 50
-#define PAUSE_TIME 1000
-
 // Displays the text on the LED display
 void realDisplayText() {
   if (M.displayAnimate() && newMessageAvailable) {
     newMessageAvailable = false;
     M.displayReset();
-    if (Serial) Serial.println(lastDisplayedText);
+    LOG_VERBOSE("Displaying: " + lastDisplayedText);
     M.displayClear();
 
     if (lastDisplayedText.length() > 5) {
-      M.displayText(lastDisplayedText.c_str(), PA_LEFT, SCROLL_SPEED, PAUSE_TIME, PA_SCROLL_LEFT, PA_NO_EFFECT);
+      M.displayText(lastDisplayedText.c_str(), PA_LEFT, Display::SCROLL_SPEED_MS, Display::PAUSE_TIME_MS, PA_SCROLL_LEFT, PA_NO_EFFECT);
     } else {
-      M.displayText(lastDisplayedText.c_str(), PA_CENTER, SCROLL_SPEED, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
+      M.displayText(lastDisplayedText.c_str(), PA_CENTER, Display::SCROLL_SPEED_MS, Display::PAUSE_TIME_MS, PA_PRINT, PA_NO_EFFECT);
     }
   }
 }
@@ -127,16 +124,19 @@ void matrixSetup() {
 
 // Prints the given text on the LED display
 void printText(String text) {
-  if (Serial) Serial.println(text);
-  char dataText[LED_MAX_BUF];
-  utf2rus("     " + text).toCharArray(dataText, LED_MAX_BUF);
+  LOG_DEBUG("Printing text: " + text);
+  char dataText[Buffer::LED_BUFFER_SIZE];
+  utf2rus("     " + text).toCharArray(dataText, Buffer::LED_BUFFER_SIZE);
 
   int textLength = strlen(dataText) - 6;
 
   if (textLength > 5) {
     for (int i = 0; i < textLength; i++) {
       M.print(&dataText[i]);
-      delay(250);
+      // Use yield() instead of delay() to allow other tasks to run
+      // Small delay is acceptable here for display animation
+      yield();
+      delay(250);  // Keep delay for display timing, but allow yield
     }
   } else {
     M.print(&dataText[5]);

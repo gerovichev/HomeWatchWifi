@@ -13,7 +13,7 @@
 #define DATA_PIN 13  // Data pin (D7)
 #define CS_PIN 5     // Chip select pin (D1)
 
-#define LED_MAX_BUF 512  // Size of the LED buffer
+// LED_MAX_BUF moved to constants.h as Buffer::LED_BUFFER_SIZE
 
 extern bool newMessageAvailable;
 

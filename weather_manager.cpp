@@ -4,8 +4,9 @@
 #include <ArduinoJson.h>
 #include "Secret.h"
 #include "location_manager.h"
-
-#define MAX_ATTEMPS 3
+#include "secure_client.h"
+#include "constants.h"
+#include "logger.h"
 
 WeatherManager::WeatherManager()
 {
@@ -19,34 +20,36 @@ WeatherManager::WeatherManager()
 
 // Function to read weather data from the OpenWeather API
 void WeatherManager::readWeather() {
-  if (Serial) Serial.println(F("Start get weather"));
+  LOG_INFO_F("Fetching weather data from OpenWeatherMap...");
 
-  int maxAttempts = MAX_ATTEMPS;
+  int maxAttempts = Retry::MAX_ATTEMPTS_WEATHER;
 
   BearSSL::WiFiClientSecure client;
-  client.setInsecure();  // Skip certificate validation
+  setupSecureClient(client, "openweathermap.org");
   HTTPClient http;
-  http.setTimeout(1500);  // Set the timeout
+  http.setTimeout(Timing::HTTP_TIMEOUT_MS);
 
-  String path = F("https://api.openweathermap.org/data/3.0/onecall?lat=") + String(latitude, 2) + F("&lon=") + String(longitude, 2) 
-                + F("&units=metric&exclude=minutely,hourly,daily,alerts&appid=") + appidWeather + F("&lang=") + lang_weather;
+  // Optimize URL construction to avoid multiple String concatenations
+  char path[Buffer::PATH_BUFFER_SIZE];
+  snprintf(path, sizeof(path), 
+           "https://api.openweathermap.org/data/3.0/onecall?lat=%.2f&lon=%.2f&units=metric&exclude=minutely,hourly,daily,alerts&appid=%s&lang=%s",
+           latitude, longitude, appidWeather, lang_weather.c_str());
 
-  if (Serial) Serial.println(path);
+  LOG_DEBUG("Weather API URL: " + String(path));
 
   int attempts = 0;
-
   bool success = false;
 
   while (attempts < maxAttempts && !success) {
     if (http.begin(client, path)) {
-      if (Serial) Serial.println(F("Start weather attempt ") + String(attempts + 1));
+      LOG_DEBUG("Weather API attempt " + String(attempts + 1) + "/" + String(maxAttempts));
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {  // Check the returning code
         String payload = http.getString();  // Get the request response payload
-        if (Serial) Serial.println(F("payload: ") + payload);
+        LOG_VERBOSE("Weather API response: " + payload);
 
-        JsonDocument doc;
+        StaticJsonDocument<Buffer::JSON_WEATHER_SIZE> doc;  // Weather API response with current weather data
         DeserializationError error = deserializeJson(doc, payload);
 
         // Test if parsing succeeds
@@ -67,26 +70,31 @@ void WeatherManager::readWeather() {
           description_weather = String(weather[F("description")]);
           description_weather.toUpperCase();
 
+          LOG_INFO("Weather updated: " + String(temperature) + "°C, " + 
+                   String(main_ext_humidity) + "%, " + String(pressure) + "mm");
+          LOG_DEBUG("Feels like: " + String(temp_max) + "°C");
+          LOG_DEBUG("Description: " + description_weather);
+
           success = true;  // Set success flag
           maxAttempts = 1;
         } else {
-          if (Serial) Serial.println(F("JSON deserialization failed: ") + String(error.c_str()));
+          LOG_ERROR("Weather JSON deserialization failed: " + String(error.c_str()));
         }
       } else {
-        if (Serial) Serial.println(F("No weather response: ") + String(httpCode, DEC));
+        LOG_WARNING("Weather API HTTP error: " + String(httpCode));
       }
 
     } else {
-      if (Serial) Serial.println(F("Failed to begin HTTP connection"));
+      LOG_ERROR_F("Failed to begin weather HTTP connection");
     }
 
     if (!success) {
       attempts++;
       if (attempts < maxAttempts) {
-        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttempts) + F(")"));
-        delay(2000);  // Wait for 2 seconds before retrying
+        LOG_WARNING("Retrying weather request (" + String(attempts) + "/" + String(maxAttempts) + ")...");
+        delay(Timing::RETRY_DELAY_MS);  // Wait before retrying
       } else {
-        if (Serial) Serial.println(F("Failed to get weather data after ") + String(maxAttempts) + F(" attempts."));
+        LOG_ERROR("Failed to get weather data after " + String(maxAttempts) + " attempts");
       }
     }
   }
@@ -101,7 +109,8 @@ void WeatherManager::printWeatherToScreen() const{
 
 // Function to print feels-like temperature on the screen
 void WeatherManager::printMaxTempToScreen() const{
-  String tape = F("Feels like ") + String(temp_max, DEC) + getGradValue() + F("C");
+  // Very short format to fit on display: "~25°C" (tilde ~ means "feels like")
+  String tape = F("~") + String(temp_max, DEC) + getGradValue() + F("C");
   drawString(tape);
 }
 

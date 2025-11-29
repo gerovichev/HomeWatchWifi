@@ -6,18 +6,18 @@
 
 // API Keys and URLs
 extern const char* googleApiKey;
-extern const String confPathCurrencyUSD;
-extern const String confPathCurrencyEUR;
-extern const String confBearerTokenCurrency;
-extern const String appidWeather;
-extern const String apiKeyTimezone;
-extern const String webOTA_updateURL;
+extern const char* confPathCurrencyUSD;
+extern const char* confPathCurrencyEUR;
+extern const char* confBearerTokenCurrency;
+extern const char* appidWeather;
+extern const char* apiKeyTimezone;
+extern const char* webOTA_updateURL;
 
 // MQTT broker credentials
 extern const char* mqtt_server;
 extern const char* mqtt_user;
 extern const char* mqtt_password;
-extern const String mqtt_topic;
+extern const char* mqtt_topic;
 extern String mqtt_topic_str;
 extern const char* wifi_name;
 extern const char* wifi_pass;

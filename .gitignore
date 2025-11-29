@@ -1,15 +1,23 @@
-# Prerequisites
+# Arduino/ESP8266 build files
 *.d
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.eep
+*.elf
+*.bin
+
+# Build directories
+build/
+.vscode/
+.idea/
 
 # Object files
-*.o
 *.ko
 *.obj
-*.elf
-
-# Linker output
 *.ilk
-*.map
 *.exp
 
 # Precompiled Headers
@@ -34,7 +42,6 @@
 *.app
 *.i*86
 *.x86_64
-*.hex
 
 # Debug files
 *.dSYM/
@@ -50,5 +57,18 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Secret files (API keys, credentials)
+# Note: Secret.h is published as a template, but Secret.cpp with real keys is not
 Secret.cpp
-build/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+*.sublime-project
+*.sublime-workspace

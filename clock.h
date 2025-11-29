@@ -7,8 +7,7 @@
 #include "TimeManager.h"
 #include "secret.h"
 
-constexpr int TIMER_INTERVAL_MS = 1000;
-constexpr int DISPLAY_CYCLE_LENGTH = 21;
+// TIMER_INTERVAL_MS and DISPLAY_CYCLE_LENGTH moved to constants.h
 
 class Clock {
 public:
@@ -17,6 +16,7 @@ public:
     void init();
     void detach();
     void loop();
+    void checkMinuteChange();  // Public method to check for minute change
     Dht22_manager& getDht22();
     WeatherManager& getWeatherManager();
     CurrencyManager& getCurrencyManager();
@@ -31,15 +31,35 @@ private:
     Dht22_manager dht22_manager;
 
     static void IRAM_ATTR TimerHandler();
-    void handleClockCounter();
+    void executeDisplayAction();
+    void buildDisplaySequence();
+    int findNextTimeIndex();
+    
+    // Wrapper methods for display
+    void displayTime();
+    void displayDate();
+    void displayDay();
+    void displayWeather();
+    void displayMaxTemp();
+    void displayPressure();
+    void displayWeatherHumidity();
+    void displayWeatherDescription();
+    void displayUSD();
+    void displayEUR();
+    void displayHomeTemp();
+    void displayHomeHumidity();
 
-    bool shouldStopLoop = false;
-    int clockCounter = 0;
+    int currentDisplayIndex = 0;
+    int lastDisplayedMinute = -1;  // Track last displayed minute
     static volatile bool runClock;
     Ticker timer1;
     WeatherManager weatherManager;
-
     CurrencyManager currencyManager;
+    
+    // Array of function pointers for display
+    typedef void (Clock::*DisplayAction)();
+    DisplayAction displaySequence[24];  // Enough for all sequence elements
+    int displaySequenceLength = 0;
 };
 
 // Initialize clock process functions

@@ -10,7 +10,7 @@ extern String hostname_m;
 extern const char* mqtt_server;
 extern const char* mqtt_user;
 extern const char* mqtt_password;
-extern const String mqtt_topic;
+extern const char* mqtt_topic;
 extern String mqtt_topic_str;
 
 extern WiFiClient espClient;

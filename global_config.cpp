@@ -5,7 +5,7 @@ String lang_weather;
 unsigned int sunrise;
 unsigned int sunset;
 
-String version_prg = "250926";
+String version_prg = "251129";
 char grad = '\x60';
 
 float humidity_delta = 0.00;
@@ -31,10 +31,7 @@ void initPerDevice() {
   setDeviceConfig();  // Load configuration for the device
 
   String macAddr = WiFi.macAddress();
-  if (Serial) {
-    Serial.print(F("MAC: "));
-    Serial.println(macAddr);
-  }
+  LOG_INFO("MAC: " + macAddr);
 
   macAddrSt = macAddr;
 
@@ -52,7 +49,12 @@ void initPerDevice() {
     isOTAreq = config.isOTAreq;
     isMQTT = config.isMQTT;
     setIntensity(config.intensity);  // Set LED intensity based on the config
-    mqtt_topic_str = hostname_m + mqtt_topic;
+    mqtt_topic_str = hostname_m + String(mqtt_topic);
+    
+    LOG_INFO("Device configured: " + hostname_m);
+    LOG_DEBUG("Language: " + lang_weather);
+    LOG_DEBUG("DHT22: " + String(IS_DHT_CONNECTED ? "connected" : "disconnected"));
+    LOG_DEBUG("MQTT: " + String(isMQTT ? "enabled" : "disabled"));
 
   } else {
     // Set default values if MAC address is not found in the config map
@@ -62,9 +64,11 @@ void initPerDevice() {
     isWebClientNeeded = true;
     isReadWeather = true;
     nameofWatch = "New";
+    
+    LOG_WARNING("MAC address not found in config, using defaults");
   }
 
-  Serial.println("Host name: " + hostname_m);
+  LOG_INFO("Hostname: " + hostname_m);
 
   // Set days of the week based on language
   if (!lang_weather.compareTo("ru")) {

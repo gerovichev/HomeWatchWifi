@@ -3,6 +3,7 @@
 #include <ArduinoOTA.h>
 #include "secret.h"
 #include "led_display.h"
+#include "logger.h"
 
 // Configuration-related global variables
 extern String lang_weather;

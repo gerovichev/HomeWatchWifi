@@ -2,6 +2,7 @@
 
 #include <ESP8266WiFi.h>
 #include <TimeLib.h>  // For advanced time manipulation
+#include "constants.h"
 
 bool isRunWeather = false;
 
@@ -14,37 +15,52 @@ void IRAM_ATTR runAllUpdates() {
 
 // Setup function, called once at startup
 void setup() {
-  Serial.begin(115200);
-  delay(500);
-
-  if (Serial) Serial.println(F("Start ..."));
+  Logger::getInstance().begin(115200);
+  Logger::getInstance().setLogLevel(LOG_LEVEL_DEBUG);  // Set desired log level
+  
+  LOG_INFO_F("Starting HomeWatchWifi...");
+  LOG_INFO("Version: " + version_prg);
 
   initPerDevice();
   matrixSetup();
 
-  printText(F("Hello ") + nameofWatch);
+  // Optimize String concatenation
+  String helloMsg;
+  helloMsg.reserve(10 + nameofWatch.length());
+  helloMsg = F("Hello ");
+  helloMsg += nameofWatch;
+  printText(helloMsg);
   delay(1500);
 
   printText(version_prg);
   delay(2000);
 
+  LOG_INFO_F("Initializing WiFi...");
   printText(F("Connect WIFI"));
 
   WIFISetup wifiSetup;
   wifiSetup.wifi_init();  // Initialize Wi-Fi
 
   printText(WiFi.localIP().toString());
+  LOG_INFO("IP Address: " + WiFi.localIP().toString());
 
+  LOG_INFO_F("Initializing location services...");
   location_init();
+  
+  LOG_INFO_F("Initializing NTP time...");
   ntp_init();
+  
+  LOG_INFO_F("Starting DHT22 sensor...");
   Dht22_manager& dht22_manager = Clock::getInstance().getDht22();
   dht22_manager.dht22Start();  // Start DHT22 sensor
 
   if (isOTAreq) {
+    LOG_INFO_F("Initializing OTA updates...");
     web_ota_init();
   }
 
   if (isMQTT) {
+    LOG_INFO_F("Initializing MQTT client...");
     setup_mqtt();  // Initialize MQTT client
   }
 
@@ -54,73 +70,78 @@ void setup() {
 
   printCityToScreen();  // Display the city
 
-  // Set up ticker to call services every 15 minutes
-  updateDataTicker.attach(TIME_TO_CALL_SERVICES, runAllUpdates);
+  // Set up ticker to call services every configured interval
+  updateDataTicker.attach(Timing::DATA_UPDATE_INTERVAL_SEC, runAllUpdates);
+  
+  LOG_INFO_F("Setup completed successfully!");
 }
 
 // Function to fetch weather and currency data
 void fetchWeatherAndCurrency() {
   if (isRunWeather) {
     isRunWeather = false;
-    if (Serial) Serial.println(F("Start detach"));
+    LOG_INFO_F("Starting data update cycle...");
 
     detachInterrupt_clock_process();  // Detach clock interrupt
-
-    if (Serial) Serial.println(F("Detached"));
+    LOG_DEBUG_F("Clock process detached");
 
     enableWiFi();
-    //yield();
 
     if (WiFi.status() == WL_CONNECTED) {
+      LOG_DEBUG_F("WiFi connected, updating services...");
 
       if (isOTAreq) {
-        if (Serial) Serial.println(F("OTA update"));
+        LOG_DEBUG_F("Checking for OTA updates...");
         update_ota();  // Handle OTA updates
       }
-      //yield();
 
+      LOG_DEBUG_F("Updating location...");
       location_init();
 
       if (isMQTT) {
         if (!client.connected()) {
+          LOG_WARNING_F("MQTT disconnected, reconnecting...");
           reconnect();  // Reconnect to MQTT broker if needed
         }
         client.loop();          // Keep MQTT client running
+        LOG_DEBUG_F("Publishing temperature to MQTT...");
         publish_temperature();  // Publish temperature to MQTT
       }
-      //yield();
 
-      if (Serial) Serial.println(F("Time update started"));
+      LOG_DEBUG_F("Updating time from NTP...");
       timeClient.update();  // Update the time from NTP server
       timeNow = timeClient.getEpochTime();
-      // Set system time
       setTime(timeNow);
-      if (Serial) Serial.println(F("Time update finished"));
+      LOG_VERBOSE("Current epoch time: " + String(timeNow));
 
-      if (Serial) Serial.println("Time: " + timeClient.getEpochTime());
+      LOG_DEBUG_F("Updating timezone...");
       getTimezone();  // Update timezone info
-      if (Serial) Serial.println(F("Get time zone finished"));
-      //yield();
 
+      LOG_DEBUG_F("Fetching weather data...");
       Clock::getInstance().getWeatherManager().readWeather();  // Fetch weather data
-      //yield();
 
+      LOG_DEBUG_F("Fetching currency rates...");
       Clock::getInstance().getCurrencyManager().initialize();  // Initialize currency data
-      //yield();
 
+      LOG_DEBUG_F("Adjusting display intensity...");
       setIntensityByTime(timeNow);  // Adjust display intensity based on time
-      //yield();
+      
+      LOG_INFO_F("Data update cycle completed successfully");
+    } else {
+      LOG_ERROR_F("WiFi not connected, skipping data update");
     }
 
     disableWiFi();
 
     init_clock_process();  // Reinitialize clock process
-      //yield();
   }
 }
 
 // Main loop, called repeatedly
 void loop() {
+  // Check for minute change on each iteration (independent of displayAnimate)
+  Clock::getInstance().checkMinuteChange();
+  
   if (displayAnimate()) {
 
     fetchWeatherAndCurrency();  // Fetch weather and currency data
@@ -135,43 +156,37 @@ void loop() {
 void enableWiFi() {
   // Check if already connected
   if (WiFi.status() == WL_CONNECTED) {
-    if (Serial) Serial.println("Wi-Fi already connected.");
+    LOG_DEBUG_F("WiFi already connected");
     return;
   }
 
-  //WiFi.forceSleepWake();
   WiFi.begin();  // Reconnect using saved credentials
-
-  // Start reconnection
-  if (Serial) Serial.print("Reconnecting to Wi-Fi");
+  LOG_INFO_F("Reconnecting to WiFi...");
 
   unsigned long startAttemptTime = millis();
-  const unsigned long WIFI_TIMEOUT = 10000;  // 10 seconds total timeout
+  int dotCount = 0;
 
   while (WiFi.status() != WL_CONNECTED) {
     // Check for timeout
-    if (millis() - startAttemptTime > WIFI_TIMEOUT) {
-      Serial.println("\nWi-Fi connection timeout");
-
+    if (millis() - startAttemptTime > Timing::WIFI_TIMEOUT_MS) {
+      LOG_ERROR_F("WiFi connection timeout");
       return;
     }
 
-    // Visual feedback
-    if (Serial) Serial.print(".");
-    delay(500);
+    // Visual feedback every 500ms
+    if (++dotCount % 5 == 0) {
+      LOG_VERBOSE_F("Still connecting...");
+    }
+    yield();  // Allow other tasks to run instead of blocking delay
   }
 
   // Connection successful
-  if (Serial) {
-    Serial.println("\nWi-Fi reconnected!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-  }
+  LOG_INFO("WiFi reconnected! IP: " + WiFi.localIP().toString());
 }
 
 // Function to disable Wi-Fi
 void disableWiFi() {
   WiFi.disconnect(true, false);
   WiFi.mode(WIFI_OFF);
-  Serial.println("Wi-Fi disabled to save power.");
+  LOG_INFO_F("WiFi disabled to save power");
 }

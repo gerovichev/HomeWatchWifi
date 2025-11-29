@@ -3,40 +3,38 @@
 #include "MQTTClient.h"
 #include "dht22_manager.h"
 #include "clock.h"
+#include "logger.h"
+#include "constants.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 void reconnect() {
   int attemptCount = 0;
-  const int maxAttempts = 3;
+  const int maxAttempts = Retry::MAX_ATTEMPTS_MQTT;
 
   while (!client.connected() && attemptCount < maxAttempts) {
-    if (Serial) Serial.print(F("Attempting MQTT connection..."));
+    LOG_DEBUG("Attempting MQTT connection (attempt " + String(attemptCount + 1) + "/" + String(maxAttempts) + ")...");
     if (client.connect(hostname_m.c_str(), mqtt_user, mqtt_password)) {
-      if (Serial) Serial.println(F("connected"));
+      LOG_INFO("MQTT connected successfully");
       return;
     } else {
-      if (Serial) 
-      {
-        Serial.print(F("failed, rc="));
-        Serial.print(client.state());
-        Serial.println(F(" try again in 5 seconds"));
-      }
-      delay(5000);
+      LOG_WARNING("MQTT connection failed, rc=" + String(client.state()) + ", retrying...");
+      delay(Timing::MQTT_RECONNECT_DELAY_MS);
       attemptCount++;
     }
   }
 
-  if (attemptCount >= maxAttempts && Serial ) {
-    Serial.println(F("Max connection attempts reached. Could not connect to MQTT broker."));
+  if (attemptCount >= maxAttempts) {
+    LOG_ERROR_F("Max MQTT connection attempts reached. Could not connect to broker.");
   }
 }
 
 
 void setup_mqtt() {
+  LOG_INFO("MQTT broker: " + String(mqtt_server) + ":1883");
   client.setServer(mqtt_server, 1883);
-  if (Serial) Serial.println(F("Topic name ") + mqtt_topic_str);
+  LOG_INFO("MQTT topic: " + mqtt_topic_str);
 }
 
 void publish_temperature() {
@@ -44,18 +42,18 @@ void publish_temperature() {
   float temperature = dht22_manager.getHomeTemp();
   
   if (isnan(temperature)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
+    LOG_ERROR_F("Failed to read temperature from DHT sensor!");
     return;
   }
 
-  if (Serial) 
-  {
-    Serial.print(F("Temperature: "));
-    Serial.print(temperature);
-    Serial.println(F(" *C"));
-  }
+  LOG_DEBUG("Publishing temperature: " + String(temperature, 2) + "°C");
 
-  char tempString[8];
+  char tempString[Buffer::TEMP_STRING_SIZE];
   dtostrf(temperature, 1, 2, tempString);
-  client.publish(mqtt_topic_str.c_str(), tempString);
+  
+  if (client.publish(mqtt_topic_str.c_str(), tempString)) {
+    LOG_VERBOSE("Temperature published to MQTT successfully");
+  } else {
+    LOG_WARNING_F("Failed to publish temperature to MQTT");
+  }
 }

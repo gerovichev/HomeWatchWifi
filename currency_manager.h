@@ -15,17 +15,18 @@ public:
     void displayEURToScreen();
 
 private:
-    static constexpr int HTTP_TIMEOUT = 1500; // Timeout for HTTP requests in milliseconds
+    // HTTP_TIMEOUT moved to constants.h as Timing::HTTP_TIMEOUT_CURRENCY_MS
 
-    String bearerTokenCurrency;
-    String pathCurrencyUSD;
-    String pathCurrencyEUR;
+    // Using const char* directly to avoid String copies in RAM
+    const char* bearerTokenCurrency;
+    const char* pathCurrencyUSD;
+    const char* pathCurrencyEUR;
 
     float dataUSDValue;
     float dataEURValue;
 
-    bool setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecure &client, const String &path);
+    bool setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecure &client, const char* path);
     float handleHttpResponse(HTTPClient &http);
-    float readCurrency(const String &path);
+    float readCurrency(const char* path);
 };
 

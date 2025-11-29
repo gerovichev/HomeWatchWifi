@@ -1,4 +1,5 @@
 #include "dht22_manager.h"
+#include "logger.h"
 
 // Define global variables
 float homeTemp = 0.0;
@@ -52,35 +53,19 @@ void Dht22_manager::printHumidity() {
 
 // Function to print detailed sensor information
 void Dht22_manager::printSensorDetails(sensor_t sensor, const char* type) {
-    if (Serial) {
-        Serial.println(F("------------------------------------"));
-        Serial.println(type);
+    LOG_DEBUG_F("------------------------------------");
+    LOG_DEBUG(String(type));
 
-        Serial.print(F("Sensor:       "));
-        Serial.println(sensor.name);
+    LOG_VERBOSE("Sensor: " + String(sensor.name));
+    LOG_VERBOSE("Driver Ver: " + String(sensor.version));
+    LOG_VERBOSE("Unique ID: " + String(sensor.sensor_id));
 
-        Serial.print(F("Driver Ver:   "));
-        Serial.println(sensor.version);
+    const char* unit = (strcmp(type, "Temperature") == 0) ? " *C" : " %";
 
-        Serial.print(F("Unique ID:    "));
-        Serial.println(sensor.sensor_id);
-
-        const char* unit = (strcmp(type, "Temperature") == 0) ? " *C" : " %";
-
-        Serial.print(F("Max Value:    "));
-        Serial.print(sensor.max_value);
-        Serial.println(unit);
-
-        Serial.print(F("Min Value:    "));
-        Serial.print(sensor.min_value);
-        Serial.println(unit);
-
-        Serial.print(F("Resolution:   "));
-        Serial.print(sensor.resolution);
-        Serial.println(unit);
-
-        Serial.println(F("------------------------------------"));
-    }
+    LOG_VERBOSE("Max Value: " + String(sensor.max_value) + String(unit));
+    LOG_VERBOSE("Min Value: " + String(sensor.min_value) + String(unit));
+    LOG_VERBOSE("Resolution: " + String(sensor.resolution) + String(unit));
+    LOG_DEBUG_F("------------------------------------");
 }
 
 // Function to read and print temperature to the display
@@ -91,11 +76,7 @@ void Dht22_manager::readAndPrintTemperature() {
         handleTemperatureError();
     } else {
         homeTemp = event.temperature;
-        if (Serial) {
-            Serial.print(F("Temperature: "));
-            Serial.print(homeTemp);
-            Serial.println(F(" *C"));
-        }
+        LOG_VERBOSE("Temperature: " + String(homeTemp, 2) + " *C");
         String tape = F("T") + String(round(homeTemp), 0) + getGradValue() + "C";
         drawString(tape);
     }
@@ -109,11 +90,7 @@ void Dht22_manager::readAndPrintHumidity() {
         handleHumidityError();
     } else {
         homeHumidity = event.relative_humidity + humidity_delta;
-        if (Serial) {
-            Serial.print(F("Humidity: "));
-            Serial.print(homeHumidity);
-            Serial.println(F("%"));
-        }
+        LOG_VERBOSE("Humidity: " + String(homeHumidity, 2) + "%");
         String tape = String(round(homeHumidity), 0) + "%";
         tape = tape.length() == 4 ? F("H") + tape : F("H ") + tape;
         drawString(tape);
@@ -123,11 +100,11 @@ void Dht22_manager::readAndPrintHumidity() {
 // Function to handle temperature reading errors
 void Dht22_manager::handleTemperatureError() {
     dht22Start();  // Restart the DHT sensor
-    if (Serial) Serial.println(F("Error reading temperature!"));
+    LOG_ERROR_F("Error reading temperature!");
 }
 
 // Function to handle humidity reading errors
 void Dht22_manager::handleHumidityError() {
     dht22Start();  // Restart the DHT sensor
-    if (Serial) Serial.println(F("Error reading humidity!"));
+    LOG_ERROR_F("Error reading humidity!");
 }

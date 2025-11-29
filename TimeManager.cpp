@@ -1,4 +1,7 @@
 #include "TimeManager.h"
+#include "secure_client.h"
+#include "constants.h"
+#include "logger.h"
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
@@ -9,52 +12,51 @@ time_t timeNow;
 
 int offset;
 String city_name;
-int maxAttemptsTimes = 3;
+int maxAttemptsTimes = Retry::MAX_ATTEMPTS_TIMEZONE;
 
 
 void getTimezone() {
-  if (Serial) {
-    Serial.println("Start get timezone");
-    Serial.println(zoneEnd);
-    Serial.println(timeNow);
-  }
+  LOG_DEBUG_F("Checking timezone...");
+  LOG_VERBOSE("Zone end: " + String(zoneEnd) + ", Current time: " + String(timeNow));
 
   if (zoneEnd > timeNow) {
     time_t untilTimeMove = zoneEnd - timeNow;
     int daysUntilTimeMove = untilTimeMove / 86400;
-    if (Serial) {
-      Serial.print("Days before hour move: ");
-      Serial.println(daysUntilTimeMove);
-      Serial.println("Don't need to update timezone");
-    }
+    LOG_DEBUG("Days until timezone change: " + String(daysUntilTimeMove));
+    LOG_INFO_F("Timezone is current, no update needed");
     return;
   }
 
+  LOG_INFO_F("Fetching timezone information...");
+  
   BearSSL::WiFiClientSecure client;
-  client.setInsecure();
+  setupSecureClient(client, "timezonedb.com");
   HTTPClient http;
 
-  String path = "https://api.timezonedb.com/v2.1/get-time-zone?key=" + apiKeyTimezone + "&format=json&lat=" + String(latitude, 2) + "&lng=" + String(longitude, 2) + "&by=position";
+  // Optimize URL construction to avoid multiple String concatenations
+  char path[Buffer::PATH_BUFFER_SIZE];
+  snprintf(path, sizeof(path),
+           "https://api.timezonedb.com/v2.1/get-time-zone?key=%s&format=json&lat=%.2f&lng=%.2f&by=position",
+           apiKeyTimezone, latitude, longitude);
   
-  Serial.println(path);
+  LOG_DEBUG("Timezone API URL: " + String(path));
 
   int attempts = 0;
   bool success = false;
 
   while (attempts < maxAttemptsTimes && !success) {
     if (http.begin(client, path)) {
-      if (Serial) Serial.println("Start timezone attempt " + String(attempts + 1));
+      LOG_DEBUG("Timezone API attempt " + String(attempts + 1) + "/" + String(maxAttemptsTimes));
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
+        LOG_VERBOSE("Timezone API response: " + payload);
 
-        if (Serial) Serial.println(payload);
-
-        JsonDocument doc;
+        StaticJsonDocument<Buffer::JSON_TIMEZONE_SIZE> doc;  // Timezone API response: status, offset, zoneStart, zoneEnd, cityName
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
-          if (Serial) Serial.println(F("Deserialization succeeded"));
+          LOG_VERBOSE_F("Timezone JSON deserialization succeeded");
           JsonObject root = doc.as<JsonObject>();
 
           const char* status = root["status"];
@@ -68,19 +70,20 @@ void getTimezone() {
             const char* name_ct = root["cityName"];
             city_name = String(name_ct);
 
-            if (Serial) Serial.println(F("offset: ") + String(offset));
+            LOG_INFO("Timezone updated: " + city_name + " (UTC" + String(offset >= 0 ? "+" : "") + String(offset/3600) + ")");
+            LOG_DEBUG("GMT offset: " + String(offset) + " seconds");
 
             success = true;
             maxAttemptsTimes = 1;
           }
         } else {
-          if (Serial) Serial.println(F("deserializeJson() failed: ") + String(error.c_str()));
+          LOG_ERROR("Timezone JSON deserialization failed: " + String(error.c_str()));
         }
       } else {
-        if (Serial) Serial.println(F("No timezone response: ") + String(httpCode));
+        LOG_WARNING("Timezone API HTTP error: " + String(httpCode));
       }
     } else {
-      if (Serial) Serial.println(F("Failed to begin HTTP connection"));
+      LOG_ERROR_F("Failed to begin timezone HTTP connection");
     }
 
     http.end();
@@ -88,10 +91,10 @@ void getTimezone() {
     if (!success) {
       attempts++;
       if (attempts < maxAttemptsTimes) {
-        if (Serial) Serial.println(F("Retrying... (") + String(attempts) + F("/") + String(maxAttemptsTimes) + F(")"));
-        delay(2000);
+        LOG_WARNING("Retrying timezone request (" + String(attempts) + "/" + String(maxAttemptsTimes) + ")...");
+        delay(Timing::RETRY_DELAY_MS);
       } else {
-        if (Serial) Serial.println(F("Failed to get timezone data after ") + String(maxAttemptsTimes) + F(" attempts."));    
+        LOG_ERROR("Failed to get timezone data after " + String(maxAttemptsTimes) + " attempts");    
       }
     }
   }
@@ -119,8 +122,10 @@ void printCityToScreen() {
 }
 
 void ntp_init() {
+  LOG_INFO_F("Initializing NTP client...");
   timeClient.begin();
   getTimezone();
   timeClient.update();
+  LOG_INFO("NTP synchronized, current time: " + timeClient.getFormattedTime());
   printCityToScreen();
 }
