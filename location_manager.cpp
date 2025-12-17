@@ -1,12 +1,12 @@
 #include "location_manager.h"
-#include <WifiLocation.h>
-#include <ArduinoJson.h>
-#include <LittleFS.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClientSecureBearSSL.h>
-#include "secure_client.h"
 #include "constants.h"
 #include "logger.h"
+#include "secure_client.h"
+#include <ArduinoJson.h>
+#include <ESP8266HTTPClient.h>
+#include <LittleFS.h>
+#include <WiFiClientSecureBearSSL.h>
+#include <WifiLocation.h>
 
 // Define global variables
 String ip;
@@ -16,7 +16,7 @@ Config config;
 int maxAttemptsLoc = Retry::MAX_ATTEMPTS_LOCATION;
 
 // Path for configuration file
-const char* filenamecnf = "/config.txt";
+const char *filenamecnf = "/config.txt";
 
 // Loads the configuration from a file
 void loadConfiguration() {
@@ -25,7 +25,8 @@ void loadConfiguration() {
 
   File file = LittleFS.open(filenamecnf, "r");
   if (file) {
-    StaticJsonDocument<Buffer::JSON_LOCATION_SIZE> doc;  // Location config is small: lat, lon, ip
+    StaticJsonDocument<Buffer::JSON_LOCATION_SIZE>
+        doc; // Location config is small: lat, lon, ip
     DeserializationError error = deserializeJson(doc, file);
 
     if (error) {
@@ -34,7 +35,7 @@ void loadConfiguration() {
       config.latitude = doc["latitude"];
       config.longitude = doc["longitude"];
       config.ip = String(doc["ip"]);
-      LOG_INFO("Loaded location config: lat=" + String(config.latitude, 6) + 
+      LOG_INFO("Loaded location config: lat=" + String(config.latitude, 6) +
                ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
     }
 
@@ -57,15 +58,16 @@ void saveConfiguration() {
     return;
   }
 
-    StaticJsonDocument<Buffer::JSON_LOCATION_SIZE> doc;  // Location config is small: lat, lon, ip
-    doc["latitude"] = config.latitude;
+  StaticJsonDocument<Buffer::JSON_LOCATION_SIZE>
+      doc; // Location config is small: lat, lon, ip
+  doc["latitude"] = config.latitude;
   doc["longitude"] = config.longitude;
   doc["ip"] = config.ip;
 
   if (serializeJson(doc, file) == 0) {
     LOG_ERROR_F("Failed to write location config to file");
   } else {
-    LOG_INFO("Location config saved: lat=" + String(config.latitude, 6) + 
+    LOG_INFO("Location config saved: lat=" + String(config.latitude, 6) +
              ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
   }
 
@@ -80,12 +82,17 @@ void setClock() {
 
   time_t now = time(nullptr);
   int waitCount = 0;
-  while (now < 8 * 3600 * 2) {
+  // Wait for time to be set, but with a timeout (approx 25 seconds)
+  while (now < 8 * 3600 * 2 && waitCount < 50) {
     delay(Timing::NTP_SYNC_WAIT_MS);
     if (++waitCount % 10 == 0) {
       LOG_VERBOSE_F("Waiting for NTP time sync...");
     }
     now = time(nullptr);
+  }
+
+  if (waitCount >= 50) {
+    LOG_WARNING_F("NTP sync timeout, continuing with unsynchronized time");
   }
 
   struct tm timeinfo;
@@ -103,14 +110,16 @@ void getLocationAPI(String ip) {
   location_t loc = location.getGeoFromWiFi();
 
   if (!location.wlStatusStr(location.getStatus()).equals("OK")) {
-    LOG_ERROR("Google Geolocation API returned status: " + location.wlStatusStr(location.getStatus()));
+    LOG_ERROR("Google Geolocation API returned status: " +
+              location.wlStatusStr(location.getStatus()));
     return;
   }
 
   latitude = loc.lat;
   longitude = loc.lon;
 
-  LOG_INFO("Location updated: lat=" + String(latitude, 7) + ", lon=" + String(longitude, 7));
+  LOG_INFO("Location updated: lat=" + String(latitude, 7) +
+           ", lon=" + String(longitude, 7));
   LOG_DEBUG("Location accuracy: " + String(loc.accuracy) + " meters");
   LOG_VERBOSE("WiFi scan data: " + location.getSurroundingWiFiJson());
 
@@ -134,11 +143,12 @@ String getIp() {
 
   while (attempts < maxAttemptsLoc && !success) {
     if (http.begin(client, path)) {
-      LOG_DEBUG("IP retrieval attempt " + String(attempts + 1) + "/" + String(maxAttemptsLoc));
-      int httpCode = http.GET();  // Send the request
+      LOG_DEBUG("IP retrieval attempt " + String(attempts + 1) + "/" +
+                String(maxAttemptsLoc));
+      int httpCode = http.GET(); // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
-        payload = http.getString();  // Get the response payload
+        payload = http.getString(); // Get the response payload
         LOG_INFO("External IP retrieved: " + payload);
         success = true;
         maxAttemptsLoc = 1;
@@ -154,12 +164,15 @@ String getIp() {
     if (!success) {
       attempts++;
       if (attempts < maxAttemptsLoc) {
-        LOG_WARNING("Retrying IP retrieval (" + String(attempts) + "/" + String(maxAttemptsLoc) + ")...");
+        LOG_WARNING("Retrying IP retrieval (" + String(attempts) + "/" +
+                    String(maxAttemptsLoc) + ")...");
         delay(Timing::RETRY_DELAY_MS);
       } else {
-        LOG_ERROR("Failed to get IP after " + String(maxAttemptsLoc) + " attempts.");
-        // Don't restart immediately - allow device to continue with cached location if available
-        // Only restart if this is critical for device operation
+        LOG_ERROR("Failed to get IP after " + String(maxAttemptsLoc) +
+                  " attempts.");
+        // Don't restart immediately - allow device to continue with cached
+        // location if available Only restart if this is critical for device
+        // operation
         if (config.latitude == 0 && config.longitude == 0) {
           LOG_ERROR_F("No cached location available, restarting device...");
           delay(1000);
@@ -177,14 +190,14 @@ String getIp() {
 // Initialize location by loading config or calling API
 void location_init() {
   LOG_INFO_F("Initializing location services...");
-  
+
   ip = getIp();
   loadConfiguration();
 
   if (ip.equals(config.ip) && config.latitude != 0) {
     latitude = config.latitude;
     longitude = config.longitude;
-    LOG_INFO("Using cached location: lat=" + String(latitude, 7) + 
+    LOG_INFO("Using cached location: lat=" + String(latitude, 7) +
              ", lon=" + String(longitude, 7));
   } else {
     LOG_INFO_F("IP changed or no cached location, fetching new location...");

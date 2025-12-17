@@ -118,7 +118,7 @@ void printDayToScreen() {
 }
 
 void printCityToScreen() {
-  drawString(city_name);
+  displayTextInSetup(city_name);
 }
 
 void ntp_init() {
