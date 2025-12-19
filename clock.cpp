@@ -73,6 +73,7 @@ void Clock::displayWeatherDescription() {
 }
 void Clock::displayUSD() { currencyManager.displayUSDToScreen(); }
 void Clock::displayEUR() { currencyManager.displayEURToScreen(); }
+void Clock::displayBTC() { currencyManager.displayBTCToScreen(); }
 void Clock::displayHomeTemp() { dht22_manager.printHomeTemp(); }
 void Clock::displayHomeHumidity() { dht22_manager.printHumidity(); }
 
@@ -103,6 +104,8 @@ void Clock::buildDisplaySequence() {
   displaySequence[index++] = &Clock::displayUSD;
   displaySequence[index++] = &Clock::displayTime;
   displaySequence[index++] = &Clock::displayEUR;
+  displaySequence[index++] = &Clock::displayTime;
+  displaySequence[index++] = &Clock::displayBTC;
 
   // Home sensors (only if connected)
   if (IS_DHT_CONNECTED) {

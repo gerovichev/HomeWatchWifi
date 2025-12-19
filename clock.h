@@ -45,6 +45,7 @@ private:
   void displayWeatherDescription();
   void displayUSD();
   void displayEUR();
+  void displayBTC();
   void displayHomeTemp();
   void displayHomeHumidity();
 

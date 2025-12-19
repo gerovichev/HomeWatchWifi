@@ -6,7 +6,7 @@ namespace Timing {
     constexpr int DATA_UPDATE_INTERVAL_SEC = 900;  // 15 minutes
     constexpr int WIFI_TIMEOUT_MS = 10000;
     constexpr int HTTP_TIMEOUT_MS = 1500;
-    constexpr int HTTP_TIMEOUT_CURRENCY_MS = 1500;
+    constexpr int HTTP_TIMEOUT_CURRENCY_MS = 3000;
     constexpr int OTA_CLIENT_TIMEOUT_MS = 2000;
     constexpr int RETRY_DELAY_MS = 2000;
     constexpr int MQTT_RECONNECT_DELAY_MS = 5000;
@@ -20,6 +20,7 @@ namespace Retry {
     constexpr int MAX_ATTEMPTS_LOCATION = 3;
     constexpr int MAX_ATTEMPTS_TIMEZONE = 3;
     constexpr int MAX_ATTEMPTS_MQTT = 3;
+    constexpr int MAX_ATTEMPTS_CURRENCY = 3;
 }
 
 // Display constants
