@@ -62,6 +62,10 @@ dkms.conf
 # Note: Secret.h is published as a template, but Secret.cpp with real keys is not
 Secret.cpp
 
+# Birthday data file with real personal data
+# Note: birthdays.h is published as a template, but BIRTHDAYS.cpp with real data is not
+BIRTHDAYS.cpp
+
 # OS files
 .DS_Store
 Thumbs.db

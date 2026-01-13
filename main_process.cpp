@@ -1,5 +1,6 @@
 #include "main_process.h"
 #include "device_state.h"
+#include "calendar_manager.h"
 
 #include "constants.h"
 #include <ESP8266WiFi.h>
@@ -64,6 +65,10 @@ void setup() {
 
   timeNow = timeClient.getEpochTime(); // Get the current time
 
+  // Initialize calendar events
+  LOG_INFO_F("Initializing calendar events...");
+  Clock::getInstance().getCalendarManager().readCalendarEvents();
+
   isRunWeather = true; // Set flag to trigger weather updates
 
   // printCityToScreen();  // Display the city
@@ -124,6 +129,12 @@ void fetchWeatherAndCurrency() {
       Clock::getInstance()
           .getCurrencyManager()
           .initialize(); // Initialize currency data
+
+      LOG_DEBUG_F("Updating calendar events...");
+      CalendarManager &calendarManager = Clock::getInstance().getCalendarManager();
+      if (calendarManager.shouldUpdateToday()) {
+        calendarManager.readCalendarEvents(); // Update calendar events
+      }
 
       LOG_DEBUG_F("Adjusting display intensity...");
       setIntensityByTime(timeNow); // Adjust display intensity based on time

@@ -2,8 +2,8 @@
 
 // Timing constants
 namespace Timing {
-    constexpr int CLOCK_INTERVAL_SEC = 5;
-    constexpr int DATA_UPDATE_INTERVAL_SEC = 900;  // 15 minutes
+    constexpr int CLOCK_INTERVAL_SEC = 6;
+    constexpr int DATA_UPDATE_INTERVAL_SEC = 1200;  // 15 minutes
     constexpr int WIFI_TIMEOUT_MS = 10000;
     constexpr int HTTP_TIMEOUT_MS = 1500;
     constexpr int HTTP_TIMEOUT_CURRENCY_MS = 3000;

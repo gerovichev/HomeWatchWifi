@@ -76,6 +76,7 @@ void Clock::displayEUR() { currencyManager.displayEURToScreen(); }
 void Clock::displayBTC() { currencyManager.displayBTCToScreen(); }
 void Clock::displayHomeTemp() { dht22_manager.printHomeTemp(); }
 void Clock::displayHomeHumidity() { dht22_manager.printHumidity(); }
+void Clock::displayCalendar() { calendarManager.printNextEventToScreen(); }
 
 // Builds display sequence based on available data
 void Clock::buildDisplaySequence() {
@@ -114,6 +115,10 @@ void Clock::buildDisplaySequence() {
     displaySequence[index++] = &Clock::displayTime;
     displaySequence[index++] = &Clock::displayHomeHumidity;
   }
+
+  // Calendar events
+  displaySequence[index++] = &Clock::displayTime;
+  displaySequence[index++] = &Clock::displayCalendar;
 
   displaySequenceLength = index;
   LOG_DEBUG("Display sequence built with " + String(displaySequenceLength) +
@@ -177,6 +182,8 @@ Dht22_manager &Clock::getDht22() { return dht22_manager; }
 WeatherManager &Clock::getWeatherManager() { return weatherManager; }
 
 CurrencyManager &Clock::getCurrencyManager() { return currencyManager; }
+
+CalendarManager &Clock::getCalendarManager() { return calendarManager; }
 
 // Initialize clock process
 void init_clock_process() { Clock::getInstance().init(); }

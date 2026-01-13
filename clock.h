@@ -5,6 +5,7 @@
 #include "dht22_manager.h"
 #include "secret.h"
 #include "weather_manager.h"
+#include "calendar_manager.h"
 #include <Ticker.h>
 
 // TIMER_INTERVAL_MS and DISPLAY_CYCLE_LENGTH moved to constants.h
@@ -20,6 +21,7 @@ public:
   Dht22_manager &getDht22();
   WeatherManager &getWeatherManager();
   CurrencyManager &getCurrencyManager();
+  CalendarManager &getCalendarManager();
 
 private:
   Clock() = default; // Private constructor for singleton pattern
@@ -48,6 +50,7 @@ private:
   void displayBTC();
   void displayHomeTemp();
   void displayHomeHumidity();
+  void displayCalendar();
 
   int currentDisplayIndex = 0;
   int lastDisplayedMinute = -1;     // Track last displayed minute
@@ -56,10 +59,11 @@ private:
 
   WeatherManager weatherManager;
   CurrencyManager currencyManager;
+  CalendarManager calendarManager;
 
   // Array of function pointers for display
   typedef void (Clock::*DisplayAction)();
-  DisplayAction displaySequence[24]; // Enough for all sequence elements
+  DisplayAction displaySequence[26]; // Enough for all sequence elements
   int displaySequenceLength = 0;
 };
 
