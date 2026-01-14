@@ -14,4 +14,14 @@ class WIFISetup
       
       // Get WiFi status string
       static String getStatusString();
+      
+      // Attempt to reconnect to saved WiFi
+      bool attemptReconnect();
+      
+  private:
+      // Attempt direct connection to saved WiFi credentials
+      bool attemptDirectConnection(int maxAttempts);
+      
+      // Check if WiFi credentials are saved
+      bool hasSavedCredentials();
 };

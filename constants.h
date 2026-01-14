@@ -54,6 +54,9 @@ namespace Sensor {
 namespace Network {
     constexpr int WIFI_RECONNECT_ATTEMPTS = 20;
     constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 10000;
+    constexpr int WIFI_INIT_RETRY_ATTEMPTS = 5;  // Количество попыток подключения при старте
+    constexpr unsigned long WIFI_INIT_RETRY_DELAY_MS = 5000;  // Задержка между попытками (5 секунд)
+    constexpr unsigned long WIFI_INIT_SINGLE_ATTEMPT_TIMEOUT_MS = 15000;  // Таймаут одной попытки (15 секунд)
 }
 
 

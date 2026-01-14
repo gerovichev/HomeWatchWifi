@@ -10,6 +10,10 @@ bool isRunWeather = false;
 
 Ticker updateDataTicker;
 
+// WiFi reconnection tracking
+static unsigned long lastWiFiCheck = 0;
+constexpr unsigned long WIFI_CHECK_INTERVAL_MS = 60000;  // Check WiFi every 60 seconds
+
 // Timer interrupt handler to trigger weather and currency updates
 void IRAM_ATTR runAllUpdates() { isRunWeather = true; }
 
@@ -155,6 +159,18 @@ void loop() {
   // Проверяем изменение минуты на каждой итерации (независимо от
   // displayAnimate)
   Clock::getInstance().checkMinuteChange();
+
+  // Periodically check WiFi connection and attempt reconnection if needed
+  unsigned long currentTime = millis();
+  if (currentTime - lastWiFiCheck > WIFI_CHECK_INTERVAL_MS) {
+    lastWiFiCheck = currentTime;
+    
+    if (WiFi.status() != WL_CONNECTED) {
+      LOG_DEBUG_F("WiFi disconnected, attempting to reconnect...");
+      WIFISetup wifiSetup;
+      wifiSetup.attemptReconnect();
+    }
+  }
 
   if (displayAnimate()) {
 
