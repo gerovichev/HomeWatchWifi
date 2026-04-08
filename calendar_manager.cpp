@@ -5,6 +5,7 @@
 #include "led_display.h"
 #include "device_state.h"
 #include <TimeLib.h>
+#include "clock.h"
 
 CalendarManager::CalendarManager() {
     // Initialize calendar data members
@@ -249,11 +250,8 @@ bool CalendarManager::isEventActiveNow() const {
 // Function to print next event on the screen
 void CalendarManager::printNextEventToScreen() const {
     if (!hasEvent || nextEventTitle.length() == 0) {
-        String tape = "No events";
-        LOG_INFO(">> Display: Calendar = " + tape);
-        drawString(tape);
-        // Update last display time even for "No events"
-        const_cast<CalendarManager*>(this)->lastDisplayTime = millis();
+        LOG_DEBUG("No events to present, skipping stage");
+        Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
@@ -261,7 +259,7 @@ void CalendarManager::printNextEventToScreen() const {
     time_t now = timeClient.getEpochTime();
     struct tm* timeinfo = gmtime(&now);
     if (timeinfo == nullptr) {
-        printTimeToScreen();
+        Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
@@ -271,7 +269,7 @@ void CalendarManager::printNextEventToScreen() const {
     // Get event date from stored start time
     struct tm* eventTimeinfo = gmtime(&nextEventStartTime);
     if (eventTimeinfo == nullptr) {
-        printTimeToScreen();
+        Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
@@ -283,8 +281,8 @@ void CalendarManager::printNextEventToScreen() const {
     // Only show events that are today
     if (!isEventToday) {
         LOG_DEBUG("Event is not today (current: " + String(currentMonth) + "/" + String(currentDay) + 
-                  ", event: " + String(eventMonth) + "/" + String(eventDay) + "), showing time instead");
-        printTimeToScreen();
+                  ", event: " + String(eventMonth) + "/" + String(eventDay) + "), skipping stage");
+        Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
@@ -297,8 +295,8 @@ void CalendarManager::printNextEventToScreen() const {
     // Check if we should display now (once per 15 minutes)
     // But always display if event is currently active (or if it's an all-day event)
     if (!shouldDisplayNow() && !isActive) {
-        // Skip display, show time instead
-        printTimeToScreen();
+        // Skip display
+        Clock::getInstance().skipCurrentDisplay();
         return;
     }
 
