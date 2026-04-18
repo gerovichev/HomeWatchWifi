@@ -99,22 +99,16 @@ void WIFISetup::wifi_init() {
             LOG_DEBUG("  Channel: " + String(WiFi.channel()));
             return;
         } else {
-            // Connection failed, but we have saved credentials
-            // Continue trying in background, don't start AP mode
-            LOG_WARNING_F("WiFi connection failed, but saved credentials exist");
-            LOG_INFO_F("Device will continue trying to reconnect in background");
-            LOG_INFO_F("AP mode will NOT be started - device will keep retrying saved WiFi");
-            printText(F("WiFi RETRY"));
-            
-            // Set auto-reconnect for background reconnection
-            WiFi.setAutoReconnect(true);
-            WiFi.persistent(true);
-            return;
+            // Connection failed with saved credentials, start AP mode
+            LOG_WARNING_F("WiFi connection failed with saved credentials after max attempts");
+            LOG_INFO_F("Starting AP mode for reconfiguration...");
+            printText(F("WIFI AP"));
         }
+    } else {
+        // No saved credentials - use WiFiManager for initial setup
+        LOG_INFO_F("No saved WiFi credentials found, starting configuration portal...");
     }
     
-    // No saved credentials - use WiFiManager for initial setup
-    LOG_INFO_F("No saved WiFi credentials found, starting configuration portal...");
     WiFiManager wifiManager;
 
     // Set connect timeout to 180 seconds
