@@ -3,7 +3,7 @@
 // Timing constants
 namespace Timing {
     constexpr int CLOCK_INTERVAL_SEC = 6;
-    constexpr int DATA_UPDATE_INTERVAL_SEC = 1200;  // 15 minutes
+    constexpr int DATA_UPDATE_INTERVAL_SEC = 1200;  // 20 minutes
     constexpr int WIFI_TIMEOUT_MS = 10000;
     constexpr int HTTP_TIMEOUT_MS = 1500;
     constexpr int HTTP_TIMEOUT_CURRENCY_MS = 3000;
@@ -27,7 +27,10 @@ namespace Retry {
 namespace Display {
     constexpr int SCROLL_SPEED_MS = 50;
     constexpr int PAUSE_TIME_MS = 1000;
-    constexpr int DISPLAY_CYCLE_LENGTH = 21;
+    // Bug fix #2: use this constant to size displaySequence[] in clock.h so
+    // adding new items cannot silently overflow the array.
+    constexpr int MAX_DISPLAY_SEQUENCE = 28; // Base 22 + DHT 4 + spare 2
+    constexpr int DISPLAY_CYCLE_LENGTH = 21; // Kept for reference; prefer MAX_DISPLAY_SEQUENCE
     constexpr int INTENSITY_DAY = 2;
     constexpr int INTENSITY_NIGHT = 0;
 }

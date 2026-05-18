@@ -156,19 +156,35 @@ void fetchWeatherAndCurrency() {
 
 // Main loop, called repeatedly
 void loop() {
-  // Проверяем изменение минуты на каждой итерации (независимо от
-  // displayAnimate)
+  // Check for minute change on every iteration (independent of displayAnimate)
   Clock::getInstance().checkMinuteChange();
 
-  // Periodically check WiFi connection and attempt reconnection if needed
+  // Periodically check WiFi connection and attempt reconnection if needed.
+  // Bug fix #4: the previous call to attemptReconnect() blocked loop() for up
+  // to WIFI_CONNECT_TIMEOUT_MS (10 s) with no watchdog feeding, risking a
+  // hardware-watchdog reset. Instead, we kick off a non-blocking reconnect:
+  // WiFi auto-reconnect (enabled in wifi_init) will finish the work in the
+  // background. We just log and nudge the stack.
   unsigned long currentTime = millis();
   if (currentTime - lastWiFiCheck > WIFI_CHECK_INTERVAL_MS) {
     lastWiFiCheck = currentTime;
-    
+
     if (WiFi.status() != WL_CONNECTED) {
-      LOG_DEBUG_F("WiFi disconnected, attempting to reconnect...");
-      WIFISetup wifiSetup;
-      wifiSetup.attemptReconnect();
+      LOG_WARNING_F("WiFi disconnected, triggering non-blocking reconnect...");
+      // Fix: WiFi.disconnect(false) on ESP8266 clears the saved credentials!
+      // We must read them first if we want to reset the state, or simply use WiFi.reconnect().
+      String savedSSID = WiFi.SSID();
+      String savedPass = WiFi.psk();
+      
+      WiFi.disconnect(false); // This actually wipes credentials in RAM/flash
+      
+      if (savedSSID.length() > 0) {
+        WiFi.begin(savedSSID.c_str(), savedPass.c_str()); // Restore credentials
+      } else {
+        WiFi.begin();
+      }
+      // Do NOT block here — auto-reconnect fires in the background.
+      // The data update cycle already guards all HTTP calls with a WiFi check.
     }
   }
 

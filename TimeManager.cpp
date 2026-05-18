@@ -74,7 +74,8 @@ void getTimezone() {
             LOG_DEBUG("GMT offset: " + String(offset) + " seconds");
 
             success = true;
-            maxAttemptsTimes = 1;
+            // Bug fix #7: removed redundant `maxAttemptsTimes = 1` — the
+            // while condition already checks `!success`.
           }
         } else {
           LOG_ERROR("Timezone JSON deserialization failed: " + String(error.c_str()));
@@ -107,7 +108,8 @@ void printTimeToScreen() {
 
 void printDateToScreen() {
   time_t epochTime = timeClient.getEpochTime();
-  struct tm* ptm = gmtime((time_t*)&epochTime);
+  // Bug fix #13: removed redundant cast — epochTime is already time_t.
+  struct tm* ptm = gmtime(&epochTime);
   String tape = getNumberWithZerro(ptm->tm_mday) + F("/") + getNumberWithZerro(ptm->tm_mon + 1);
   drawString(tape);
 }

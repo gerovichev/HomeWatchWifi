@@ -98,13 +98,15 @@ void Dht22_manager::readAndPrintHumidity() {
 }
 
 // Function to handle temperature reading errors
+// Bug fix #10: previously called dht22Start() which calls setHomeTemp() which
+// calls handleTemperatureError() again — infinite recursion on a disconnected
+// sensor.  On ESP8266's ~4 KB stack this overflows very quickly.
+// Now just logs and returns; the sensor will be re-read on the next cycle.
 void Dht22_manager::handleTemperatureError() {
-    dht22Start();  // Restart the DHT sensor
     LOG_ERROR_F("Error reading temperature!");
 }
 
 // Function to handle humidity reading errors
 void Dht22_manager::handleHumidityError() {
-    dht22Start();  // Restart the DHT sensor
     LOG_ERROR_F("Error reading humidity!");
 }

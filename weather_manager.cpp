@@ -55,11 +55,11 @@ void WeatherManager::readWeather() {
         // Test if parsing succeeds
         if (!error) {
           JsonObject current = doc[F("current")];
-          unsigned int timezone_offset = doc[F("timezone_offset")];
-          sunrise = current[F("sunrise")];
-          sunset = current[F("sunset")];
-          sunrise += timezone_offset;
-          sunset += timezone_offset;
+          // Bug fix #6: timezone_offset can be negative (e.g. UTC-5 = -18000).
+          // Store as int; sunrise/sunset are full epoch values so use unsigned long.
+          int timezone_offset = (int)doc[F("timezone_offset")];
+          sunrise = (unsigned long)((long)current[F("sunrise")] + timezone_offset);
+          sunset  = (unsigned long)((long)current[F("sunset")]  + timezone_offset);
 
           temperature = (int)floor((double)current[F("temp")] + 0.5);
           temp_max = (int)floor((double)current[F("feels_like")] + 0.5);
@@ -76,7 +76,8 @@ void WeatherManager::readWeather() {
           LOG_DEBUG("Description: " + description_weather);
 
           success = true;  // Set success flag
-          maxAttempts = 1;
+          // Bug fix #7: removed redundant `maxAttempts = 1` — the while
+          // condition already checks `!success`, so the loop exits correctly.
         } else {
           LOG_ERROR("Weather JSON deserialization failed: " + String(error.c_str()));
         }

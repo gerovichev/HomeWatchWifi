@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TimeManager.h"
+#include "constants.h"
 #include "currency_manager.h"
 #include "dht22_manager.h"
 #include "secret.h"
@@ -64,7 +65,9 @@ private:
 
   // Array of function pointers for display
   typedef void (Clock::*DisplayAction)();
-  DisplayAction displaySequence[26]; // Enough for all sequence elements
+  // Bug fix #2: use the named constant so array size stays in sync with
+  // buildDisplaySequence() — magic literal 26 was easy to silently overflow.
+  DisplayAction displaySequence[Display::MAX_DISPLAY_SEQUENCE];
   int displaySequenceLength = 0;
 };
 

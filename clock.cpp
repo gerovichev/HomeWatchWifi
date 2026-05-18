@@ -159,9 +159,14 @@ void Clock::checkMinuteChange() {
 
 // Skip current display item and force immediate transition
 void Clock::skipCurrentDisplay() {
-  lastChangeTime = millis() - (Timing::CLOCK_INTERVAL_SEC * 1000UL); // Force timeExpired in next loop check
-  
-  // Advance the index so we also skip the structurally paired 'displayTime' 
+  // Bug fix #3: millis() - interval underflows to ~ULONG_MAX when called in
+  // the first CLOCK_INTERVAL_SEC seconds of boot (or near 49-day rollover),
+  // which makes timeExpired permanently false and freezes display advancement.
+  // Setting to 0 is always safe: 0 guarantees timeExpired is true on the very
+  // next loop() tick regardless of when this is called.
+  lastChangeTime = 0;
+
+  // Advance the index so we also skip the structurally paired 'displayTime'
   // that follows this skipped item, preventing Time being shown twice in a row.
   currentDisplayIndex++;
   if (currentDisplayIndex >= displaySequenceLength) {

@@ -40,10 +40,10 @@ void setIntensityByTime(time_t timeNow) {
                       ? Display::INTENSITY_DAY
                       : Display::INTENSITY_NIGHT;
 
-  LOG_VERBOSE("sunrise: " + formatTime(sunrise));
-  LOG_VERBOSE("Time: " + formatTime(timeNow));
-  LOG_VERBOSE("sunset: " + formatTime(sunset));
-  LOG_VERBOSE("intensity: " + String(intensity));
+  LOG_DEBUG("sunrise: " + formatTime(sunrise));
+  LOG_DEBUG("Time: " + formatTime(timeNow));
+  LOG_DEBUG("sunset: " + formatTime(sunset));
+  LOG_DEBUG("intensity: " + String(intensity));
   M.setIntensity(intensity);
 }
 
@@ -181,7 +181,8 @@ void printText(String text) {
   char dataText[Buffer::LED_BUFFER_SIZE];
   utf2rus("     " + text).toCharArray(dataText, Buffer::LED_BUFFER_SIZE);
 
-  int textLength = strlen(dataText) - 6;
+  // Bug fix #11: 5 spaces are prepended, so subtract 5 (was 6, off by one).
+  int textLength = strlen(dataText) - 5;
 
   if (textLength > 5) {
     for (int i = 0; i < textLength; i++) {

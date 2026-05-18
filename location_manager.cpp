@@ -151,7 +151,8 @@ String getIp() {
         payload = http.getString(); // Get the response payload
         LOG_INFO("External IP retrieved: " + payload);
         success = true;
-        maxAttemptsLoc = 1;
+        // Bug fix #7: removed redundant `maxAttemptsLoc = 1` — the while
+        // condition already checks `!success`.
       } else {
         LOG_WARNING("IP retrieval HTTP error: " + String(httpCode));
       }

@@ -7,8 +7,11 @@
 
 // Configuration-related global variables
 extern String lang_weather;
-extern unsigned int sunrise;
-extern unsigned int sunset;
+// Bug fix #6: unsigned int is 16-bit on ESP8266 (max 65535). Unix epoch
+// timestamps for sunrise/sunset are ~1.7 billion — they silently truncated,
+// making day/night intensity switching always wrong. Use unsigned long (32-bit).
+extern unsigned long sunrise;
+extern unsigned long sunset;
 
 extern String version_prg;
 extern char grad;

@@ -1,5 +1,6 @@
 // CurrencyManager.cpp
 #include "currency_manager.h"
+#include "clock.h"
 #include "constants.h"
 #include "logger.h"
 #include "secure_client.h"
@@ -34,12 +35,18 @@ void CurrencyManager::initialize() {
 void CurrencyManager::displayUSDToScreen() {
   if (dataUSDValue > 0) {
     drawString(F("$ ") + String(dataUSDValue, 2));
+  } else {
+    // Bug fix #8: when data hasn't loaded yet, skip this slot so the display
+    // advances immediately instead of freezing on blank content.
+    Clock::getInstance().skipCurrentDisplay();
   }
 }
 
 void CurrencyManager::displayEURToScreen() {
   if (dataEURValue > 0) {
     drawString(F("\x84 ") + String(dataEURValue, 2));
+  } else {
+    Clock::getInstance().skipCurrentDisplay();
   }
 }
 
@@ -47,19 +54,20 @@ void CurrencyManager::displayBTCToScreen() {
   if (dataBTCValue > 0) {
     drawString(
         F("B$ ") +
-        String(
-            dataBTCValue,
-            0)); // \x80 is often a bitcoin symbol in custom fonts or just 'B'
+        String(dataBTCValue, 0));
+  } else {
+    Clock::getInstance().skipCurrentDisplay();
   }
 }
 
 bool CurrencyManager::setupHttpClient(HTTPClient &http,
                                       BearSSL::WiFiClientSecure &client,
                                       const char *path, const char *token) {
+  // Bug fix #15: this helper is never called (both readCurrency and readCrypto
+  // set up their HTTP clients inline). Kept to avoid breaking the header
+  // declaration, but marked as deprecated.
   setupSecureClient(client, "currency API");
   http.setTimeout(Timing::HTTP_TIMEOUT_CURRENCY_MS);
-
-  LOG_DEBUG("Currency API path: " + String(path));
 
   if (!http.begin(client, path)) {
     LOG_ERROR_F("Failed to begin HTTP connection");
@@ -67,7 +75,6 @@ bool CurrencyManager::setupHttpClient(HTTPClient &http,
   }
 
   String authHeader = F("Bearer ") + String(token);
-  LOG_DEBUG("Currency API Bearer: " + String(authHeader));
   http.addHeader(F("Authorization"), authHeader);
   http.addHeader(F("Content-Type"), F("application/json"));
   return true;

@@ -1,11 +1,14 @@
 #include "global_config.h"
+#include "constants.h"
 
 // Define the global variables
 String lang_weather;
-unsigned int sunrise;
-unsigned int sunset;
+// Bug fix #6: changed from unsigned int (16-bit, max 65535) to unsigned long
+// (32-bit) so Unix epoch timestamps fit without silent truncation.
+unsigned long sunrise;
+unsigned long sunset;
 
-String version_prg = "260408";
+String version_prg = "260427";
 char grad = '\x60';
 
 float humidity_delta = 0.00;
@@ -81,9 +84,23 @@ void initPerDevice() {
 }
 
 // Function to verify Wi-Fi connection
+// Bug fix #5: the original loop called WiFi.reconnect() with no delay, no
+// timeout, and no watchdog feeding — if WiFi never recovered the device would
+// hang forever. Now limited to Timing::WIFI_TIMEOUT_MS with yield() safety.
 void verifyWifi() {
+  if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
+    return; // Already connected — fast path
+  }
+
+  WiFi.reconnect();
+  unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0, 0, 0, 0)) {
-    WiFi.reconnect();
+    if (millis() - startTime > Timing::WIFI_TIMEOUT_MS) {
+      LOG_WARNING_F("verifyWifi() timed out, continuing with degraded connectivity");
+      return;
+    }
+    yield();
+    delay(200);
   }
 }
 

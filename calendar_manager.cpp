@@ -257,24 +257,25 @@ void CalendarManager::printNextEventToScreen() const {
     
     // Check if event is today - only show events on the day of the event
     time_t now = timeClient.getEpochTime();
-    struct tm* timeinfo = gmtime(&now);
-    if (timeinfo == nullptr) {
+    // Bug fix #1: gmtime() returns a shared static buffer; use gmtime_r() with
+    // separate stack structs so the two calls don't overwrite each other.
+    struct tm timeinfo_now, timeinfo_event;
+    if (gmtime_r(&now, &timeinfo_now) == nullptr) {
         Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
-    int currentMonth = timeinfo->tm_mon + 1;
-    int currentDay = timeinfo->tm_mday;
+    int currentMonth = timeinfo_now.tm_mon + 1;
+    int currentDay   = timeinfo_now.tm_mday;
     
     // Get event date from stored start time
-    struct tm* eventTimeinfo = gmtime(&nextEventStartTime);
-    if (eventTimeinfo == nullptr) {
+    if (gmtime_r(&nextEventStartTime, &timeinfo_event) == nullptr) {
         Clock::getInstance().skipCurrentDisplay();
         return;
     }
     
-    int eventMonth = eventTimeinfo->tm_mon + 1;
-    int eventDay = eventTimeinfo->tm_mday;
+    int eventMonth = timeinfo_event.tm_mon + 1;
+    int eventDay   = timeinfo_event.tm_mday;
     
     bool isEventToday = (eventMonth == currentMonth && eventDay == currentDay);
     
@@ -341,12 +342,15 @@ String CalendarManager::formatEventTime(time_t eventTime) const {
 
 // Helper: Format event time range as "HH:MM-HH:MM"
 String CalendarManager::formatEventTimeRange(time_t startTime, time_t endTime) const {
-    struct tm* startInfo = gmtime(&startTime);
-    struct tm* endInfo = gmtime(&endTime);
+    // Bug fix #9: gmtime() shares one static buffer; both calls were aliased.
+    // Use gmtime_r() with separate stack structs.
+    struct tm startTm, endTm;
+    gmtime_r(&startTime, &startTm);
+    gmtime_r(&endTime,   &endTm);
     char timeStr[12];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d-%02d:%02d", 
-             startInfo->tm_hour, startInfo->tm_min,
-             endInfo->tm_hour, endInfo->tm_min);
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d-%02d:%02d",
+             startTm.tm_hour, startTm.tm_min,
+             endTm.tm_hour,   endTm.tm_min);
     return String(timeStr);
 }
 
