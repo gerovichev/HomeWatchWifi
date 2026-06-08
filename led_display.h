@@ -1,7 +1,6 @@
 #pragma once
 
 #include <MD_Parola.h>
-#include <vector>
 #include "fonts.h"
 #include "global_config.h"
 
@@ -16,19 +15,6 @@
 // LED_MAX_BUF moved to constants.h as Buffer::LED_BUFFER_SIZE
 
 extern bool newMessageAvailable;
-
-// Class to manage LED buffer
-class LEDBuffer {
-public:
-  LEDBuffer(size_t size);
-  void clearBuffer();
-  char* getBuffer();
-  size_t getBufferSize() const;
-
-private:
-  std::vector<char> buffer;
-  size_t bufferSize;
-};
 
 // Function declarations
 void setIntensity(byte intensity);

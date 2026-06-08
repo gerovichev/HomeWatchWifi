@@ -20,7 +20,7 @@ inline void setupSecureClient(BearSSL::WiFiClientSecure& client, const char* dom
     client.setInsecure();
     
     if (domain) {
-        LOG_WARNING("Using insecure SSL connection for: " + String(domain) + 
+        LOG_DEBUG("Using insecure SSL connection for: " + String(domain) + 
                    " (consider adding certificate validation)");
     } else {
         LOG_DEBUG_F("Secure client configured (insecure mode)");

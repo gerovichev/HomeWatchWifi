@@ -90,3 +90,17 @@ void Logger::verbose(const __FlashStringHelper* message) {
     verbose(String(message));
 }
 
+void Logger::logf(LogLevel level, const char* format, ...) {
+    if (!isInitialized || !Serial || level > logLevel) {
+        return;
+    }
+
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    log(level, String(buffer));
+}
+

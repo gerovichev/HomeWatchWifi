@@ -51,12 +51,8 @@ public:
     String getMacAddress() const { return macAddrSt; }
     void setMacAddress(const String& mac) { macAddrSt = mac; }
 
-    // Days of week
-    String* getDaysOfWeek() { return daysOfTheWeek; }
-
 private:
     DeviceState() = default;
     DeviceState(const DeviceState&) = delete;
     DeviceState& operator=(const DeviceState&) = delete;
 };
-

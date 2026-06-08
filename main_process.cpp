@@ -23,7 +23,7 @@ void setup() {
   Logger::getInstance().setLogLevel(LOG_LEVEL_DEBUG); // Set desired log level
 
   LOG_INFO_F("Starting HomeWatchWifi...");
-  LOG_INFO("Version: " + version_prg);
+  LOG_INFO_FMT("Version: %s", version_prg.c_str());
 
   initPerDevice();
   matrixSetup();
@@ -45,7 +45,7 @@ void setup() {
 
   displayTextInSetup(WiFi.localIP().toString());
 
-  LOG_INFO("IP Address: " + WiFi.localIP().toString());
+  LOG_INFO_FMT("IP Address: %s", WiFi.localIP().toString().c_str());
 
   LOG_INFO_F("Initializing location services...");
   location_init();
@@ -102,8 +102,14 @@ void fetchWeatherAndCurrency() {
         update_ota(); // Handle OTA updates
       }
 
-      LOG_DEBUG_F("Updating location...");
-      location_init();
+      LOG_DEBUG_F("Updating location (if 1 hour has passed)...");
+      static unsigned long lastLocationCheck = 0;
+      if (lastLocationCheck == 0 || millis() - lastLocationCheck > 3600000UL) { // 1 hour
+        location_init();
+        lastLocationCheck = millis();
+        // Handle edge case where millis() was extremely close to 0 on boot
+        if (lastLocationCheck == 0) lastLocationCheck = 1;
+      }
 
       if (DeviceState::getInstance().isMqttEnabled()) {
         if (!client.connected()) {
@@ -119,7 +125,7 @@ void fetchWeatherAndCurrency() {
       timeClient.update(); // Update the time from NTP server
       timeNow = timeClient.getEpochTime();
       setTime(timeNow);
-      LOG_VERBOSE("Current epoch time: " + String(timeNow));
+      LOG_VERBOSE_FMT("Current epoch time: %lu", timeNow);
 
       LOG_DEBUG_F("Updating timezone...");
       getTimezone(); // Update timezone info
@@ -227,7 +233,7 @@ void enableWiFi() {
   }
 
   // Connection successful
-  LOG_INFO("WiFi reconnected! IP: " + WiFi.localIP().toString());
+  LOG_INFO_FMT("WiFi reconnected! IP: %s", WiFi.localIP().toString().c_str());
 }
 
 // Function to disable Wi-Fi

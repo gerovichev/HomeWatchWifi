@@ -6,6 +6,23 @@
 #include "logger.h"
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
+// Helper to log WiFi connection details — avoids duplicating 8 log lines
+static void logConnectionInfo() {
+  String connectedSSID = WiFi.SSID();
+  printText(connectedSSID);
+  delay(2000); // Show SSID for 2 seconds
+
+  LOG_INFO("\xE2\x9C\x93 WiFi connected successfully!");
+  LOG_INFO("  SSID: " + connectedSSID);
+  LOG_INFO("  IP: " + WiFi.localIP().toString());
+  LOG_INFO("  Gateway: " + WiFi.gatewayIP().toString());
+  LOG_DEBUG("  Subnet: " + WiFi.subnetMask().toString());
+  LOG_DEBUG("  DNS: " + WiFi.dnsIP().toString());
+  LOG_DEBUG("  MAC: " + WiFi.macAddress());
+  LOG_DEBUG("  RSSI: " + String(WiFi.RSSI()) + " dBm");
+  LOG_DEBUG("  Channel: " + String(WiFi.channel()));
+}
+
 // Check if WiFi credentials are saved in EEPROM
 bool WIFISetup::hasSavedCredentials() {
   // WiFiManager stores credentials in EEPROM
@@ -92,22 +109,7 @@ void WIFISetup::wifi_init() {
       // Connection successful
       WiFi.setAutoReconnect(true);
       WiFi.persistent(true);
-
-      // Display connected network name on LED display
-      String connectedSSID = WiFi.SSID();
-      printText(connectedSSID);
-      delay(2000); // Show SSID for 2 seconds
-
-      // Log detailed connection information
-      LOG_INFO("✓ WiFi connected successfully!");
-      LOG_INFO("  SSID: " + connectedSSID);
-      LOG_INFO("  IP: " + WiFi.localIP().toString());
-      LOG_INFO("  Gateway: " + WiFi.gatewayIP().toString());
-      LOG_DEBUG("  Subnet: " + WiFi.subnetMask().toString());
-      LOG_DEBUG("  DNS: " + WiFi.dnsIP().toString());
-      LOG_DEBUG("  MAC: " + WiFi.macAddress());
-      LOG_DEBUG("  RSSI: " + String(WiFi.RSSI()) + " dBm");
-      LOG_DEBUG("  Channel: " + String(WiFi.channel()));
+      logConnectionInfo();
       return;
     } else {
       // Connection failed with saved credentials, start AP mode
@@ -159,22 +161,7 @@ void WIFISetup::wifi_init() {
     // Set WiFi auto-reconnect and persistence
     WiFi.setAutoReconnect(true);
     WiFi.persistent(true);
-
-    // Display connected network name on LED display
-    String connectedSSID = WiFi.SSID();
-    printText(connectedSSID);
-    delay(2000); // Show SSID for 2 seconds
-
-    // Log detailed connection information
-    LOG_INFO("✓ WiFi connected successfully!");
-    LOG_INFO("  SSID: " + connectedSSID);
-    LOG_INFO("  IP: " + WiFi.localIP().toString());
-    LOG_INFO("  Gateway: " + WiFi.gatewayIP().toString());
-    LOG_DEBUG("  Subnet: " + WiFi.subnetMask().toString());
-    LOG_DEBUG("  DNS: " + WiFi.dnsIP().toString());
-    LOG_DEBUG("  MAC: " + WiFi.macAddress());
-    LOG_DEBUG("  RSSI: " + String(WiFi.RSSI()) + " dBm");
-    LOG_DEBUG("  Channel: " + String(WiFi.channel()));
+    logConnectionInfo();
   }
 }
 

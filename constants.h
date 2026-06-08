@@ -37,7 +37,7 @@ namespace Display {
 
 // Buffer sizes
 namespace Buffer {
-    constexpr size_t LED_BUFFER_SIZE = 512;
+    constexpr size_t LED_BUFFER_SIZE = 128;
     constexpr size_t JSON_WEATHER_SIZE = 1024;
     constexpr size_t JSON_TIMEZONE_SIZE = 512;
     constexpr size_t JSON_CURRENCY_SIZE = 512;

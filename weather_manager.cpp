@@ -42,7 +42,7 @@ void WeatherManager::readWeather() {
 
   while (attempts < maxAttempts && !success) {
     if (http.begin(client, path)) {
-      LOG_DEBUG("Weather API attempt " + String(attempts + 1) + "/" + String(maxAttempts));
+      LOG_DEBUG_FMT("Weather API attempt %d/%d", attempts + 1, maxAttempts);
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {  // Check the returning code
@@ -70,9 +70,8 @@ void WeatherManager::readWeather() {
           description_weather = String(weather[F("description")]);
           description_weather.toUpperCase();
 
-          LOG_INFO("Weather updated: " + String(temperature) + "°C, " + 
-                   String(main_ext_humidity) + "%, " + String(pressure) + "mm");
-          LOG_DEBUG("Feels like: " + String(temp_max) + "°C");
+          LOG_INFO_FMT("Weather updated: %d°C, %u%%, %dmm", temperature, main_ext_humidity, pressure);
+          LOG_DEBUG_FMT("Feels like: %d°C", temp_max);
           LOG_DEBUG("Description: " + description_weather);
 
           success = true;  // Set success flag
@@ -82,7 +81,7 @@ void WeatherManager::readWeather() {
           LOG_ERROR("Weather JSON deserialization failed: " + String(error.c_str()));
         }
       } else {
-        LOG_WARNING("Weather API HTTP error: " + String(httpCode));
+        LOG_WARNING_FMT("Weather API HTTP error: %d", httpCode);
       }
 
     } else {
@@ -92,10 +91,11 @@ void WeatherManager::readWeather() {
     if (!success) {
       attempts++;
       if (attempts < maxAttempts) {
-        LOG_WARNING("Retrying weather request (" + String(attempts) + "/" + String(maxAttempts) + ")...");
-        delay(Timing::RETRY_DELAY_MS);  // Wait before retrying
+        LOG_WARNING_FMT("Retrying weather request (%d/%d)...", attempts, maxAttempts);
+        delay(Timing::RETRY_DELAY_MS);
+        yield(); // Allow system tasks
       } else {
-        LOG_ERROR("Failed to get weather data after " + String(maxAttempts) + " attempts");
+        LOG_ERROR_FMT("Failed to get weather data after %d attempts", maxAttempts);
       }
     }
   }

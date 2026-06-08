@@ -8,7 +8,7 @@ String lang_weather;
 unsigned long sunrise;
 unsigned long sunset;
 
-String version_prg = "260427";
+String version_prg = "260530";
 char grad = '\x60';
 
 float humidity_delta = 0.00;
@@ -19,7 +19,7 @@ boolean isMQTT = false;
 String nameofWatch;
 
 String macAddrSt;
-String daysOfTheWeek[7];
+
 boolean IS_DHT_CONNECTED = false;
 bool isWebClientNeeded = true;
 boolean isReadWeather = true;
@@ -31,27 +31,25 @@ char getGradValue() {
 
 // Initialize the device configuration based on the MAC address
 void initPerDevice() {
-  setDeviceConfig();  // Load configuration for the device
-
   String macAddr = WiFi.macAddress();
   LOG_INFO("MAC: " + macAddr);
 
   macAddrSt = macAddr;
 
-  // If the device MAC is found in the configuration map, apply the settings
-  if (configMap.find(macAddr) != configMap.end()) {
-    DeviceConfig& config = configMap[macAddr];
+  // Look up device config in the flat array (replaces std::map)
+  const DeviceConfig* config = findDeviceConfig(macAddr);
 
-    lang_weather = config.lang_weather;
-    hostname_m = config.hostname_m;
-    IS_DHT_CONNECTED = config.IS_DHT_CONNECTED;
-    isWebClientNeeded = config.isWebClientNeeded;
-    isReadWeather = config.isReadWeather;
-    humidity_delta = config.humidity_delta;
-    nameofWatch = config.nameofWatch;
-    isOTAreq = config.isOTAreq;
-    isMQTT = config.isMQTT;
-    setIntensity(config.intensity);  // Set LED intensity based on the config
+  if (config != nullptr) {
+    lang_weather = config->lang_weather;
+    hostname_m = config->hostname_m;
+    IS_DHT_CONNECTED = config->IS_DHT_CONNECTED;
+    isWebClientNeeded = config->isWebClientNeeded;
+    isReadWeather = config->isReadWeather;
+    humidity_delta = config->humidity_delta;
+    nameofWatch = config->nameofWatch;
+    isOTAreq = config->isOTAreq;
+    isMQTT = config->isMQTT;
+    setIntensity(config->intensity);  // Set LED intensity based on the config
     mqtt_topic_str = hostname_m + String(mqtt_topic);
     
     LOG_INFO("Device configured: " + hostname_m);
@@ -60,7 +58,7 @@ void initPerDevice() {
     LOG_DEBUG("MQTT: " + String(isMQTT ? "enabled" : "disabled"));
 
   } else {
-    // Set default values if MAC address is not found in the config map
+    // Set default values if MAC address is not found in the config array
     lang_weather = "en";
     hostname_m = "ESP_Unknown";
     IS_DHT_CONNECTED = false;
@@ -73,13 +71,19 @@ void initPerDevice() {
 
   LOG_INFO("Hostname: " + hostname_m);
 
-  // Set days of the week based on language
+  // Days of week are now accessed via getDayOfWeek() using PROGMEM
+}
+
+// Accessor for days of week from PROGMEM
+const char* const daysRu[] PROGMEM = {"Вс.", "Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб."};
+const char* const daysEn[] PROGMEM = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+const char* getDayOfWeek(int day) {
+  if (day < 0 || day > 6) return "";
   if (!lang_weather.compareTo("ru")) {
-    String daysOfTheWeekT[7] = { "Вс.", "Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб." };
-    for (int i = 0; i < 7; i++) daysOfTheWeek[i] = daysOfTheWeekT[i];
+    return daysRu[day];
   } else {
-    String daysOfTheWeekT[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-    for (int i = 0; i < 7; i++) daysOfTheWeek[i] = daysOfTheWeekT[i];
+    return daysEn[day];
   }
 }
 
@@ -110,6 +114,6 @@ String getNumberWithZerro(int dig) {
 }
 
 // Wrapper function for drawing text on the display
-void drawString(String tape) {
+void drawString(const String& tape) {
   drawStringMax(tape);
 }

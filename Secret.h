@@ -2,7 +2,6 @@
 #define SECRET_H
 
 #include <Arduino.h> // Include Arduino core for String and other Arduino types
-#include <map>
 
 // API Keys and URLs
 extern const char *googleApiKey;
@@ -24,22 +23,33 @@ extern String mqtt_topic_str;
 extern const char *wifi_name;
 extern const char *wifi_pass;
 
-// Device configuration structure
+// Device configuration structure — uses const char* to avoid heap String allocations
 struct DeviceConfig {
-  String lang_weather;
-  String hostname_m;
+  const char* lang_weather;
+  const char* hostname_m;
   bool IS_DHT_CONNECTED;
   bool isWebClientNeeded;
   bool isReadWeather;
   double humidity_delta;
-  String nameofWatch;
-  bool isOTAreq = true;
+  const char* nameofWatch;
+  bool isOTAreq;
   int intensity;
-  bool isMQTT = false;
+  bool isMQTT;
 };
 
-// Global device configuration map
-extern std::map<String, DeviceConfig> configMap;
+// Number of device configurations
+extern const int DEVICE_CONFIG_COUNT;
+
+// Device configurations stored as a flat array (avoids std::map heap overhead)
+struct DeviceConfigEntry {
+  const char* mac;
+  DeviceConfig config;
+};
+
+extern const DeviceConfigEntry deviceConfigs[];
+
+// Function to find config by MAC address, returns nullptr if not found
+const DeviceConfig* findDeviceConfig(const String& mac);
 
 // Function declarations
 void setDeviceConfig();

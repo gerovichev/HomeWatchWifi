@@ -33,6 +33,8 @@ public:
     void debug(const __FlashStringHelper* message);
     void verbose(const __FlashStringHelper* message);
 
+    void logf(LogLevel level, const char* format, ...);
+
 private:
     Logger() : logLevel(LOG_LEVEL_INFO), isInitialized(false) {}
     Logger(const Logger&) = delete;
@@ -58,6 +60,13 @@ private:
 #define LOG_INFO_F(msg) Logger::getInstance().info(F(msg))
 #define LOG_DEBUG_F(msg) Logger::getInstance().debug(F(msg))
 #define LOG_VERBOSE_F(msg) Logger::getInstance().verbose(F(msg))
+
+// Macros for formatted logging
+#define LOG_ERROR_FMT(fmt, ...) Logger::getInstance().logf(LOG_LEVEL_ERROR, fmt, __VA_ARGS__)
+#define LOG_WARNING_FMT(fmt, ...) Logger::getInstance().logf(LOG_LEVEL_WARNING, fmt, __VA_ARGS__)
+#define LOG_INFO_FMT(fmt, ...) Logger::getInstance().logf(LOG_LEVEL_INFO, fmt, __VA_ARGS__)
+#define LOG_DEBUG_FMT(fmt, ...) Logger::getInstance().logf(LOG_LEVEL_DEBUG, fmt, __VA_ARGS__)
+#define LOG_VERBOSE_FMT(fmt, ...) Logger::getInstance().logf(LOG_LEVEL_VERBOSE, fmt, __VA_ARGS__)
 
 #endif // LOGGER_H
 

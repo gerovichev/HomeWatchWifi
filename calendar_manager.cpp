@@ -225,7 +225,7 @@ void CalendarManager::readCalendarEvents() {
 }
 
 // Check if event should be displayed now (once per 15 minutes)
-bool CalendarManager::shouldDisplayNow() const {
+bool CalendarManager::shouldDisplayNow() {
     unsigned long currentTime = millis();
     const unsigned long DISPLAY_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes in milliseconds
     
@@ -248,7 +248,7 @@ bool CalendarManager::isEventActiveNow() const {
 }
 
 // Function to print next event on the screen
-void CalendarManager::printNextEventToScreen() const {
+void CalendarManager::printNextEventToScreen() {
     if (!hasEvent || nextEventTitle.length() == 0) {
         LOG_DEBUG("No events to present, skipping stage");
         Clock::getInstance().skipCurrentDisplay();
@@ -329,7 +329,7 @@ void CalendarManager::printNextEventToScreen() const {
     drawString(tape);
     
     // Update last display time
-    const_cast<CalendarManager*>(this)->lastDisplayTime = millis();
+    lastDisplayTime = millis();
 }
 
 // Helper: Format event time as HH:MM

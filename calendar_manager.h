@@ -11,7 +11,7 @@ public:
 
     // Methods to interact with calendar data
     void readCalendarEvents();              // Reads events from birthdays.h
-    void printNextEventToScreen() const;    // Prints next upcoming event
+    void printNextEventToScreen();          // Prints next upcoming event
     bool shouldUpdateToday() const;         // Checks if calendar should be updated today
     void markUpdated();                     // Marks calendar as updated for today
 
@@ -30,7 +30,7 @@ private:
     String formatEventTimeRange(time_t startTime, time_t endTime) const;
     String truncateEventTitle(const String& title, int maxLength = 20) const;
     void findNextEvent();                   // Find next upcoming event
-    bool shouldDisplayNow() const;         // Check if event should be displayed now (once per 15 min)
+    bool shouldDisplayNow();               // Check if event should be displayed now (once per 15 min)
     bool isEventActiveNow() const;         // Check if current event is active (within time range)
     bool matchesHostname(const char* eventHostname) const; // Check if event matches current board hostname
 };

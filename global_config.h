@@ -23,7 +23,7 @@ extern boolean isMQTT;
 extern String nameofWatch;
 extern String macAddrSt;
 
-extern String daysOfTheWeek[7];
+const char* getDayOfWeek(int day);
 extern boolean IS_DHT_CONNECTED;
 extern bool isWebClientNeeded;
 extern boolean isReadWeather;
@@ -31,5 +31,5 @@ extern boolean isReadWeather;
 void initPerDevice();
 void verifyWifi();
 String getNumberWithZerro(int dig);
-void drawString(String tape);
+void drawString(const String& tape);
 char getGradValue();

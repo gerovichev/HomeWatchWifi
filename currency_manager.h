@@ -17,8 +17,6 @@ public:
   void displayBTCToScreen();
 
 private:
-  // HTTP_TIMEOUT moved to constants.h as Timing::HTTP_TIMEOUT_CURRENCY_MS
-
   // Using const char* directly to avoid String copies in RAM
   const char *bearerTokenCurrency;
   const char *bearerTokenCrypto;
@@ -30,10 +28,17 @@ private:
   float dataEURValue;
   float dataBTCValue;
 
-  bool setupHttpClient(HTTPClient &http, BearSSL::WiFiClientSecure &client,
-                       const char *path, const char *token);
-  float handleHttpResponse(HTTPClient &http);
-  float handleCryptoResponse(HTTPClient &http);
-  float readCurrency(const char *path);
-  float readCrypto(const char *path);
+  // Response parser callback type
+  typedef float (*ResponseParser)(const String& payload);
+
+  // Unified HTTP fetch with retry logic — eliminates ~180 lines of duplication
+  float fetchWithRetry(const char* path, const char* token, ResponseParser parser);
+
+  // Convenience wrappers
+  float readCurrency(const char* path);
+  float readCrypto(const char* path);
+
+  // Response parsers
+  static float parseCurrencyResponse(const String& payload);
+  static float parseCryptoResponse(const String& payload);
 };

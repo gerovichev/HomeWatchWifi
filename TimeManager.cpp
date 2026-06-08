@@ -17,12 +17,12 @@ int maxAttemptsTimes = Retry::MAX_ATTEMPTS_TIMEZONE;
 
 void getTimezone() {
   LOG_DEBUG_F("Checking timezone...");
-  LOG_VERBOSE("Zone end: " + String(zoneEnd) + ", Current time: " + String(timeNow));
+  LOG_VERBOSE_FMT("Zone end: %lu, Current time: %lu", zoneEnd, timeNow);
 
   if (zoneEnd > timeNow) {
     time_t untilTimeMove = zoneEnd - timeNow;
     int daysUntilTimeMove = untilTimeMove / 86400;
-    LOG_DEBUG("Days until timezone change: " + String(daysUntilTimeMove));
+    LOG_DEBUG_FMT("Days until timezone change: %d", daysUntilTimeMove);
     LOG_INFO_F("Timezone is current, no update needed");
     return;
   }
@@ -46,7 +46,7 @@ void getTimezone() {
 
   while (attempts < maxAttemptsTimes && !success) {
     if (http.begin(client, path)) {
-      LOG_DEBUG("Timezone API attempt " + String(attempts + 1) + "/" + String(maxAttemptsTimes));
+      LOG_DEBUG_FMT("Timezone API attempt %d/%d", attempts + 1, maxAttemptsTimes);
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
@@ -70,8 +70,8 @@ void getTimezone() {
             const char* name_ct = root["cityName"];
             city_name = String(name_ct);
 
-            LOG_INFO("Timezone updated: " + city_name + " (UTC" + String(offset >= 0 ? "+" : "") + String(offset/3600) + ")");
-            LOG_DEBUG("GMT offset: " + String(offset) + " seconds");
+            LOG_INFO_FMT("Timezone updated: %s (UTC%s%d)", city_name.c_str(), offset >= 0 ? "+" : "", offset/3600);
+            LOG_DEBUG_FMT("GMT offset: %ld seconds", offset);
 
             success = true;
             // Bug fix #7: removed redundant `maxAttemptsTimes = 1` — the
@@ -81,7 +81,7 @@ void getTimezone() {
           LOG_ERROR("Timezone JSON deserialization failed: " + String(error.c_str()));
         }
       } else {
-        LOG_WARNING("Timezone API HTTP error: " + String(httpCode));
+        LOG_WARNING_FMT("Timezone API HTTP error: %d", httpCode);
       }
     } else {
       LOG_ERROR_F("Failed to begin timezone HTTP connection");
@@ -92,10 +92,10 @@ void getTimezone() {
     if (!success) {
       attempts++;
       if (attempts < maxAttemptsTimes) {
-        LOG_WARNING("Retrying timezone request (" + String(attempts) + "/" + String(maxAttemptsTimes) + ")...");
+        LOG_WARNING_FMT("Retrying timezone request (%d/%d)...", attempts, maxAttemptsTimes);
         delay(Timing::RETRY_DELAY_MS);
       } else {
-        LOG_ERROR("Failed to get timezone data after " + String(maxAttemptsTimes) + " attempts");    
+        LOG_ERROR_FMT("Failed to get timezone data after %d attempts", maxAttemptsTimes);    
       }
     }
   }
@@ -115,7 +115,7 @@ void printDateToScreen() {
 }
 
 void printDayToScreen() {
-  String tape = daysOfTheWeek[timeClient.getDay()];
+  String tape = String(getDayOfWeek(timeClient.getDay()));
   drawString(tape);
 }
 

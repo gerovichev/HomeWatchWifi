@@ -7,17 +7,6 @@ bool newMessageAvailable = false;
 MD_Parola M = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 String lastDisplayedText = "";
 
-// LEDBuffer class implementation
-LEDBuffer::LEDBuffer(size_t size) : bufferSize(size) {
-  buffer.resize(bufferSize);
-  clearBuffer();
-}
-
-void LEDBuffer::clearBuffer() { std::fill(buffer.begin(), buffer.end(), '\0'); }
-
-char *LEDBuffer::getBuffer() { return buffer.data(); }
-
-size_t LEDBuffer::getBufferSize() const { return bufferSize; }
 
 // Sets the intensity of the display
 void setIntensity(byte intensity) { M.setIntensity(intensity); }
@@ -91,12 +80,12 @@ void drawStringMax(const String &tape) {
   }
 }
 
-// Displays the text on the LED display
-void realDisplayText() {
-  if (M.displayAnimate() && newMessageAvailable) {
+// Helper to display text with correct alignment based on length
+static void showTextOnDisplay(const String& prefix) {
+  if (newMessageAvailable) {
     newMessageAvailable = false;
     M.displayReset();
-    LOG_INFO(">> Display: " + lastDisplayedText);
+    LOG_INFO(prefix + lastDisplayedText);
     M.displayClear();
 
     if (lastDisplayedText.length() > 5) {
@@ -111,24 +100,16 @@ void realDisplayText() {
   }
 }
 
+// Displays the text on the LED display
+void realDisplayText() {
+  if (M.displayAnimate()) {
+    showTextOnDisplay(">> Display: ");
+  }
+}
+
 // Force display text (for use in setup when display may not be ready)
 void forceDisplayText() {
-  if (newMessageAvailable) {
-    newMessageAvailable = false;
-    M.displayReset();
-    LOG_INFO(">> Force Display: " + lastDisplayedText);
-    M.displayClear();
-
-    if (lastDisplayedText.length() > 5) {
-      M.displayText(lastDisplayedText.c_str(), PA_LEFT,
-                    Display::SCROLL_SPEED_MS, Display::PAUSE_TIME_MS,
-                    PA_SCROLL_LEFT, PA_NO_EFFECT);
-    } else {
-      M.displayText(lastDisplayedText.c_str(), PA_CENTER,
-                    Display::SCROLL_SPEED_MS, Display::PAUSE_TIME_MS, PA_PRINT,
-                    PA_NO_EFFECT);
-    }
-  }
+  showTextOnDisplay(">> Force Display: ");
 }
 
 // Wait for animation to complete
