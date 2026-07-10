@@ -4,7 +4,6 @@
 #include "constants.h"
 #include "currency_manager.h"
 #include "dht22_manager.h"
-#include "secret.h"
 #include "weather_manager.h"
 #include "calendar_manager.h"
 #include <Ticker.h>

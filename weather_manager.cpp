@@ -15,6 +15,7 @@ WeatherManager::WeatherManager()
     temp_max = 0;
     pressure = 0;
     humidity = 0;
+    main_ext_humidity = 0;
     description_weather = "";
 }
 
@@ -35,7 +36,7 @@ void WeatherManager::readWeather() {
            "https://api.openweathermap.org/data/3.0/onecall?lat=%.2f&lon=%.2f&units=metric&exclude=minutely,hourly,daily,alerts&appid=%s&lang=%s",
            latitude, longitude, appidWeather, lang_weather.c_str());
 
-  LOG_DEBUG("Weather API URL: " + String(path));
+  LOG_DEBUG_FMT("Weather API URL: %s", path);
 
   int attempts = 0;
   bool success = false;
@@ -47,7 +48,7 @@ void WeatherManager::readWeather() {
 
       if (httpCode == HTTP_CODE_OK) {  // Check the returning code
         String payload = http.getString();  // Get the request response payload
-        LOG_VERBOSE("Weather API response: " + payload);
+        LOG_VERBOSE_FMT("Weather API response: %s", payload.c_str());
 
         StaticJsonDocument<Buffer::JSON_WEATHER_SIZE> doc;  // Weather API response with current weather data
         DeserializationError error = deserializeJson(doc, payload);
@@ -70,15 +71,17 @@ void WeatherManager::readWeather() {
           description_weather = String(weather[F("description")]);
           description_weather.toUpperCase();
 
-          LOG_INFO_FMT("Weather updated: %d°C, %u%%, %dmm", temperature, main_ext_humidity, pressure);
-          LOG_DEBUG_FMT("Feels like: %d°C", temp_max);
-          LOG_DEBUG("Description: " + description_weather);
+          LOG_INFO_FMT("Weather updated: %d C, %u%%, %dmm", temperature,
+                       main_ext_humidity, pressure);
+          LOG_DEBUG_FMT("Feels like: %d C", temp_max);
+          LOG_DEBUG_FMT("Description: %s", description_weather.c_str());
 
           success = true;  // Set success flag
           // Bug fix #7: removed redundant `maxAttempts = 1` — the while
           // condition already checks `!success`, so the loop exits correctly.
         } else {
-          LOG_ERROR("Weather JSON deserialization failed: " + String(error.c_str()));
+          LOG_ERROR_FMT("Weather JSON deserialization failed: %s",
+                        error.c_str());
         }
       } else {
         LOG_WARNING_FMT("Weather API HTTP error: %d", httpCode);
@@ -87,6 +90,8 @@ void WeatherManager::readWeather() {
     } else {
       LOG_ERROR_F("Failed to begin weather HTTP connection");
     }
+
+    http.end();
 
     if (!success) {
       attempts++;
@@ -99,32 +104,35 @@ void WeatherManager::readWeather() {
       }
     }
   }
-  http.end();  // Close connection
 }
 
 // Function to print temperature on the screen
 void WeatherManager::printWeatherToScreen() const{
-  String tape = String(temperature, DEC) + getGradValue() + F("C");
-  drawString(tape);
+  char tape[12];
+  snprintf(tape, sizeof(tape), "%d%cC", temperature, getGradValue());
+  drawString(String(tape));
 }
 
 // Function to print feels-like temperature on the screen
 void WeatherManager::printMaxTempToScreen() const{
   // Very short format to fit on display: "~25°C" (tilde ~ means "feels like")
-  String tape = F("~") + String(temp_max, DEC) + getGradValue() + F("C");
-  drawString(tape);
+  char tape[12];
+  snprintf(tape, sizeof(tape), "~%d%cC", temp_max, getGradValue());
+  drawString(String(tape));
 }
 
 // Function to print pressure on the screen
 void WeatherManager::printPressureToScreen() const{
-  String tape = String(pressure, DEC) + F("mm");
-  drawString(tape);
+  char tape[12];
+  snprintf(tape, sizeof(tape), "%dmm", pressure);
+  drawString(String(tape));
 }
 
 // Function to print humidity on the screen
 void WeatherManager::printHumidityToScreen() const{
-  String tape = String(main_ext_humidity, DEC) + F("%");
-  drawString(tape);
+  char tape[8];
+  snprintf(tape, sizeof(tape), "%u%%", main_ext_humidity);
+  drawString(String(tape));
 }
 
 // Function to print weather description on the screen

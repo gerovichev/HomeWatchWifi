@@ -19,6 +19,6 @@ extern Config config;
 void loadConfiguration();
 void saveConfiguration();
 void setClock();
-void getLocationAPI(String ip);
+void getLocationAPI(const String &ip);
 String getIp();
 void location_init();

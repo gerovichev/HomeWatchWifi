@@ -1,11 +1,11 @@
 #include "dht22_manager.h"
 #include "logger.h"
 
-// Define global variables
-float homeTemp = 0.0;
-float homeHumidity = 0.0;
+// Removed duplicate globals — homeTemp and homeHumidity are class members,
+// not file-scope globals. Member initialisation is done in the constructor below.
 
-Dht22_manager::Dht22_manager() : DHT_Unified(DHTPIN, DHTTYPE){}
+Dht22_manager::Dht22_manager()
+    : DHT_Unified(DHTPIN, DHTTYPE), homeTemp(0.0f), homeHumidity(0.0f) {}
 
 // Function to initialize the DHT22 sensor and set home temperature
 void Dht22_manager::dht22Start() {
@@ -54,17 +54,17 @@ void Dht22_manager::printHumidity() {
 // Function to print detailed sensor information
 void Dht22_manager::printSensorDetails(sensor_t sensor, const char* type) {
     LOG_DEBUG_F("------------------------------------");
-    LOG_DEBUG(String(type));
+    LOG_DEBUG_FMT("%s", type);
 
-    LOG_VERBOSE("Sensor: " + String(sensor.name));
-    LOG_VERBOSE("Driver Ver: " + String(sensor.version));
-    LOG_VERBOSE("Unique ID: " + String(sensor.sensor_id));
+    LOG_VERBOSE_FMT("Sensor: %s",      sensor.name);
+    LOG_VERBOSE_FMT("Driver Ver: %d",  sensor.version);
+    LOG_VERBOSE_FMT("Unique ID: %d",   sensor.sensor_id);
 
     const char* unit = (strcmp(type, "Temperature") == 0) ? " *C" : " %";
 
-    LOG_VERBOSE("Max Value: " + String(sensor.max_value) + String(unit));
-    LOG_VERBOSE("Min Value: " + String(sensor.min_value) + String(unit));
-    LOG_VERBOSE("Resolution: " + String(sensor.resolution) + String(unit));
+    LOG_VERBOSE_FMT("Max Value: %.2f%s",  sensor.max_value,  unit);
+    LOG_VERBOSE_FMT("Min Value: %.2f%s",  sensor.min_value,  unit);
+    LOG_VERBOSE_FMT("Resolution: %.4f%s", sensor.resolution, unit);
     LOG_DEBUG_F("------------------------------------");
 }
 
@@ -76,9 +76,11 @@ void Dht22_manager::readAndPrintTemperature() {
         handleTemperatureError();
     } else {
         homeTemp = event.temperature;
-        LOG_VERBOSE("Temperature: " + String(homeTemp, 2) + " *C");
-        String tape = F("T") + String(round(homeTemp), 0) + getGradValue() + "C";
-        drawString(tape);
+        LOG_VERBOSE_FMT("Temperature: %.2f *C", homeTemp);
+        char tape[12];
+        snprintf(tape, sizeof(tape), "T%d%cC",
+                 (int)round(homeTemp), getGradValue());
+        drawString(String(tape));
     }
 }
 
@@ -90,10 +92,12 @@ void Dht22_manager::readAndPrintHumidity() {
         handleHumidityError();
     } else {
         homeHumidity = event.relative_humidity + humidity_delta;
-        LOG_VERBOSE("Humidity: " + String(homeHumidity, 2) + "%");
-        String tape = String(round(homeHumidity), 0) + "%";
-        tape = tape.length() == 4 ? F("H") + tape : F("H ") + tape;
-        drawString(tape);
+        LOG_VERBOSE_FMT("Humidity: %.2f%%", homeHumidity);
+        int h = (int)round(homeHumidity);
+        char tape[8];
+        // Pad with space when value is 2 digits to keep display aligned
+        snprintf(tape, sizeof(tape), h >= 100 ? "H%d%%" : "H %d%%", h);
+        drawString(String(tape));
     }
 }
 

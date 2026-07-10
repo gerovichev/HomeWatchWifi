@@ -12,7 +12,6 @@ extern const char *appidWeather;
 extern const char *apiKeyTimezone;
 extern const char *webOTA_updateURL;
 extern const char *confPathCryptoBTC;
-extern const char *confBearerTokenCrypto;
 
 // MQTT broker credentials
 extern const char *mqtt_server;

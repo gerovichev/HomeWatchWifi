@@ -16,7 +16,7 @@
 // TIME_TO_CALL_SERVICES moved to constants.h as Timing::DATA_UPDATE_INTERVAL_SEC
 
 extern Ticker updateDataTicker;
-extern bool isRunWeather;
+extern volatile bool isRunWeather;
 //extern WeatherManager weatherManager;
 
 // Function prototypes

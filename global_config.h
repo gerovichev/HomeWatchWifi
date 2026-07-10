@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ArduinoOTA.h>
-#include "secret.h"
+#include "Secret.h"
 #include "led_display.h"
 #include "logger.h"
 

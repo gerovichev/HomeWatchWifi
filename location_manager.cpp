@@ -21,7 +21,7 @@ const char *filenamecnf = "/config.txt";
 // Loads the configuration from a file
 void loadConfiguration() {
   int result = LittleFS.begin();
-  LOG_DEBUG("LittleFS opened with result: " + String(result));
+  LOG_DEBUG_FMT("LittleFS opened with result: %d", result);
 
   File file = LittleFS.open(filenamecnf, "r");
   if (file) {
@@ -35,8 +35,8 @@ void loadConfiguration() {
       config.latitude = doc["latitude"];
       config.longitude = doc["longitude"];
       config.ip = String(doc["ip"]);
-      LOG_INFO("Loaded location config: lat=" + String(config.latitude, 6) +
-               ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
+      LOG_INFO_FMT("Loaded location config: lat=%.6f, lon=%.6f, ip=%s",
+                   config.latitude, config.longitude, config.ip.c_str());
     }
 
     file.close();
@@ -50,11 +50,12 @@ void loadConfiguration() {
 // Saves the configuration to a file
 void saveConfiguration() {
   int result = LittleFS.begin();
-  LOG_DEBUG("LittleFS opened for writing: " + String(result));
+  LOG_DEBUG_FMT("LittleFS opened for writing: %d", result);
 
   File file = LittleFS.open(filenamecnf, "w");
   if (!file) {
     LOG_ERROR_F("Failed to create location config file");
+    LittleFS.end();
     return;
   }
 
@@ -67,8 +68,8 @@ void saveConfiguration() {
   if (serializeJson(doc, file) == 0) {
     LOG_ERROR_F("Failed to write location config to file");
   } else {
-    LOG_INFO("Location config saved: lat=" + String(config.latitude, 6) +
-             ", lon=" + String(config.longitude, 6) + ", ip=" + config.ip);
+    LOG_INFO_FMT("Location config saved: lat=%.6f, lon=%.6f, ip=%s",
+                 config.latitude, config.longitude, config.ip.c_str());
   }
 
   file.close();
@@ -97,31 +98,31 @@ void setClock() {
 
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  LOG_DEBUG("System clock set: " + String(asctime(&timeinfo)));
+  const char *timeStr = asctime(&timeinfo);
+  LOG_DEBUG_FMT("System clock set: %s", timeStr ? timeStr : "n/a");
 }
 
 // Get location via Google API using WiFi data
-void getLocationAPI(String ip) {
+void getLocationAPI(const String &ip) {
   LOG_INFO_F("Fetching location via Google Geolocation API...");
 
   setClock();
 
   WifiLocation location(googleApiKey);
   location_t loc = location.getGeoFromWiFi();
+  String status = location.wlStatusStr(location.getStatus());
 
-  if (!location.wlStatusStr(location.getStatus()).equals("OK")) {
-    LOG_ERROR("Google Geolocation API returned status: " +
-              location.wlStatusStr(location.getStatus()));
+  if (!status.equals("OK")) {
+    LOG_ERROR_FMT("Google Geolocation API returned status: %s", status.c_str());
     return;
   }
 
   latitude = loc.lat;
   longitude = loc.lon;
 
-  LOG_INFO("Location updated: lat=" + String(latitude, 7) +
-           ", lon=" + String(longitude, 7));
-  LOG_DEBUG("Location accuracy: " + String(loc.accuracy) + " meters");
-  LOG_VERBOSE("WiFi scan data: " + location.getSurroundingWiFiJson());
+  LOG_INFO_FMT("Location updated: lat=%.7f, lon=%.7f", latitude, longitude);
+  LOG_DEBUG_FMT("Location accuracy: %u meters", loc.accuracy);
+  LOG_VERBOSE_FMT("WiFi scan data: %s", location.getSurroundingWiFiJson().c_str());
 
   config.latitude = latitude;
   config.longitude = longitude;
@@ -143,18 +144,17 @@ String getIp() {
 
   while (attempts < maxAttemptsLoc && !success) {
     if (http.begin(client, path)) {
-      LOG_DEBUG("IP retrieval attempt " + String(attempts + 1) + "/" +
-                String(maxAttemptsLoc));
+      LOG_DEBUG_FMT("IP retrieval attempt %d/%d", attempts + 1, maxAttemptsLoc);
       int httpCode = http.GET(); // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
         payload = http.getString(); // Get the response payload
-        LOG_INFO("External IP retrieved: " + payload);
+        LOG_INFO_FMT("External IP retrieved: %s", payload.c_str());
         success = true;
         // Bug fix #7: removed redundant `maxAttemptsLoc = 1` — the while
         // condition already checks `!success`.
       } else {
-        LOG_WARNING("IP retrieval HTTP error: " + String(httpCode));
+        LOG_WARNING_FMT("IP retrieval HTTP error: %d", httpCode);
       }
 
       http.end();
@@ -165,12 +165,11 @@ String getIp() {
     if (!success) {
       attempts++;
       if (attempts < maxAttemptsLoc) {
-        LOG_WARNING("Retrying IP retrieval (" + String(attempts) + "/" +
-                    String(maxAttemptsLoc) + ")...");
+        LOG_WARNING_FMT("Retrying IP retrieval (%d/%d)...", attempts,
+                        maxAttemptsLoc);
         delay(Timing::RETRY_DELAY_MS);
       } else {
-        LOG_ERROR("Failed to get IP after " + String(maxAttemptsLoc) +
-                  " attempts.");
+        LOG_ERROR_FMT("Failed to get IP after %d attempts.", maxAttemptsLoc);
         // Don't restart immediately - allow device to continue with cached
         // location if available Only restart if this is critical for device
         // operation
@@ -198,8 +197,8 @@ void location_init() {
   if (ip.equals(config.ip) && config.latitude != 0) {
     latitude = config.latitude;
     longitude = config.longitude;
-    LOG_INFO("Using cached location: lat=" + String(latitude, 7) +
-             ", lon=" + String(longitude, 7));
+    LOG_INFO_FMT("Using cached location: lat=%.7f, lon=%.7f", latitude,
+                 longitude);
   } else {
     LOG_INFO_F("IP changed or no cached location, fetching new location...");
     getLocationAPI(ip);

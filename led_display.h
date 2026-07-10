@@ -28,4 +28,4 @@ void waitForAnimation();
 void displayTextInSetup(const String& text);
 bool displayAnimate();
 void matrixSetup();
-void printText(String text);
+void printText(const String& text);

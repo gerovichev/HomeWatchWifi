@@ -41,6 +41,7 @@ private:
     Logger& operator=(const Logger&) = delete;
     
     void log(LogLevel level, const String& message);
+    void log(LogLevel level, const __FlashStringHelper* message);
     const char* getLevelString(LogLevel level);
     
     LogLevel logLevel;

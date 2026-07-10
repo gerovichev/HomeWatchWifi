@@ -1,6 +1,6 @@
 #pragma once
 
-#include <WiFiClientSecureBearSSL.h>
+#include <WiFiClientSecure.h>
 #include "logger.h"
 
 /**
@@ -20,8 +20,7 @@ inline void setupSecureClient(BearSSL::WiFiClientSecure& client, const char* dom
     client.setInsecure();
     
     if (domain) {
-        LOG_DEBUG("Using insecure SSL connection for: " + String(domain) + 
-                   " (consider adding certificate validation)");
+        LOG_DEBUG_FMT("Using insecure SSL for: %s (consider cert validation)", domain);
     } else {
         LOG_DEBUG_F("Secure client configured (insecure mode)");
     }

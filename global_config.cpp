@@ -8,7 +8,7 @@ String lang_weather;
 unsigned long sunrise;
 unsigned long sunset;
 
-String version_prg = "260530";
+String version_prg = "260710";
 char grad = '\x60';
 
 float humidity_delta = 0.00;
@@ -32,7 +32,7 @@ char getGradValue() {
 // Initialize the device configuration based on the MAC address
 void initPerDevice() {
   String macAddr = WiFi.macAddress();
-  LOG_INFO("MAC: " + macAddr);
+  LOG_INFO_FMT("MAC: %s", macAddr.c_str());
 
   macAddrSt = macAddr;
 
@@ -50,12 +50,12 @@ void initPerDevice() {
     isOTAreq = config->isOTAreq;
     isMQTT = config->isMQTT;
     setIntensity(config->intensity);  // Set LED intensity based on the config
-    mqtt_topic_str = hostname_m + String(mqtt_topic);
-    
-    LOG_INFO("Device configured: " + hostname_m);
-    LOG_DEBUG("Language: " + lang_weather);
-    LOG_DEBUG("DHT22: " + String(IS_DHT_CONNECTED ? "connected" : "disconnected"));
-    LOG_DEBUG("MQTT: " + String(isMQTT ? "enabled" : "disabled"));
+    mqtt_topic_str = hostname_m + mqtt_topic;   // const char* appended directly
+
+    LOG_INFO_FMT("Device configured: %s", hostname_m.c_str());
+    LOG_DEBUG_FMT("Language: %s", lang_weather.c_str());
+    LOG_DEBUG_FMT("DHT22: %s", IS_DHT_CONNECTED ? "connected" : "disconnected");
+    LOG_DEBUG_FMT("MQTT: %s", isMQTT ? "enabled" : "disabled");
 
   } else {
     // Set default values if MAC address is not found in the config array
@@ -66,10 +66,10 @@ void initPerDevice() {
     isReadWeather = true;
     nameofWatch = "New";
     
-    LOG_WARNING("MAC address not found in config, using defaults");
+    LOG_WARNING_F("MAC address not found in config, using defaults");
   }
 
-  LOG_INFO("Hostname: " + hostname_m);
+  LOG_INFO_FMT("Hostname: %s", hostname_m.c_str());
 
   // Days of week are now accessed via getDayOfWeek() using PROGMEM
 }

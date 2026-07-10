@@ -29,10 +29,10 @@ void setIntensityByTime(time_t timeNow) {
                       ? Display::INTENSITY_DAY
                       : Display::INTENSITY_NIGHT;
 
-  LOG_DEBUG("sunrise: " + formatTime(sunrise));
-  LOG_DEBUG("Time: " + formatTime(timeNow));
-  LOG_DEBUG("sunset: " + formatTime(sunset));
-  LOG_DEBUG("intensity: " + String(intensity));
+  LOG_DEBUG_FMT("sunrise: %s", formatTime(sunrise).c_str());
+  LOG_DEBUG_FMT("Time: %s", formatTime(timeNow).c_str());
+  LOG_DEBUG_FMT("sunset: %s", formatTime(sunset).c_str());
+  LOG_DEBUG_FMT("intensity: %d", intensity);
   M.setIntensity(intensity);
 }
 
@@ -81,11 +81,11 @@ void drawStringMax(const String &tape) {
 }
 
 // Helper to display text with correct alignment based on length
-static void showTextOnDisplay(const String& prefix) {
+static void showTextOnDisplay(const char *prefix) {
   if (newMessageAvailable) {
     newMessageAvailable = false;
     M.displayReset();
-    LOG_INFO(prefix + lastDisplayedText);
+    LOG_INFO_FMT("%s%s", prefix, lastDisplayedText.c_str());
     M.displayClear();
 
     if (lastDisplayedText.length() > 5) {
@@ -112,9 +112,16 @@ void forceDisplayText() {
   showTextOnDisplay(">> Force Display: ");
 }
 
-// Wait for animation to complete
+// Wait for animation to complete — guarded by a 5 s timeout so a stalled
+// display never hangs setup() long enough to trip the hardware watchdog.
 void waitForAnimation() {
+  const unsigned long deadline = millis() + 5000UL;
   while (!displayAnimate()) {
+    if (millis() > deadline) {
+      LOG_WARNING_F("waitForAnimation() timeout — display may be stalled");
+      break;
+    }
+    yield();
     delay(50);
   }
 }
@@ -157,13 +164,17 @@ void matrixSetup() {
 }
 
 // Prints the given text on the LED display
-void printText(String text) {
-  LOG_DEBUG("Printing text: " + text);
+void printText(const String& text) {
+  LOG_DEBUG_FMT("Printing text: %s", text.c_str());
   char dataText[Buffer::LED_BUFFER_SIZE];
-  utf2rus("     " + text).toCharArray(dataText, Buffer::LED_BUFFER_SIZE);
+  String converted = utf2rus(text);
+  snprintf(dataText, sizeof(dataText), "     %s", converted.c_str());
 
   // Bug fix #11: 5 spaces are prepended, so subtract 5 (was 6, off by one).
-  int textLength = strlen(dataText) - 5;
+  int textLength = (int)strlen(dataText) - 5;
+  if (textLength < 0) {
+    textLength = 0;
+  }
 
   if (textLength > 5) {
     for (int i = 0; i < textLength; i++) {

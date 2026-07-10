@@ -39,7 +39,7 @@ void getTimezone() {
            "https://api.timezonedb.com/v2.1/get-time-zone?key=%s&format=json&lat=%.2f&lng=%.2f&by=position",
            apiKeyTimezone, latitude, longitude);
   
-  LOG_DEBUG("Timezone API URL: " + String(path));
+  LOG_DEBUG_FMT("Timezone API URL: %s", path);
 
   int attempts = 0;
   bool success = false;
@@ -51,7 +51,7 @@ void getTimezone() {
 
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
-        LOG_VERBOSE("Timezone API response: " + payload);
+        LOG_VERBOSE_FMT("Timezone API response: %s", payload.c_str());
 
         StaticJsonDocument<Buffer::JSON_TIMEZONE_SIZE> doc;  // Timezone API response: status, offset, zoneStart, zoneEnd, cityName
         DeserializationError error = deserializeJson(doc, payload);
@@ -60,7 +60,7 @@ void getTimezone() {
           JsonObject root = doc.as<JsonObject>();
 
           const char* status = root["status"];
-          if (strcmp(status, "OK") == 0) {
+          if (status != nullptr && strcmp(status, "OK") == 0) {
             offset = (int)root["gmtOffset"];
             timeClient.setTimeOffset(offset);
 
@@ -78,7 +78,8 @@ void getTimezone() {
             // while condition already checks `!success`.
           }
         } else {
-          LOG_ERROR("Timezone JSON deserialization failed: " + String(error.c_str()));
+          LOG_ERROR_FMT("Timezone JSON deserialization failed: %s",
+                        error.c_str());
         }
       } else {
         LOG_WARNING_FMT("Timezone API HTTP error: %d", httpCode);
@@ -102,21 +103,31 @@ void getTimezone() {
 }
 
 void printTimeToScreen() {
-  String tape = timeClient.getFormattedTime().substring(0, 5);
-  drawString(tape);
+  time_t epochTime = timeClient.getEpochTime();
+  struct tm tmValue;
+  if (gmtime_r(&epochTime, &tmValue) == nullptr) {
+    return;
+  }
+
+  char tape[6];
+  snprintf(tape, sizeof(tape), "%02d:%02d", tmValue.tm_hour, tmValue.tm_min);
+  drawString(String(tape));
 }
 
 void printDateToScreen() {
   time_t epochTime = timeClient.getEpochTime();
-  // Bug fix #13: removed redundant cast — epochTime is already time_t.
-  struct tm* ptm = gmtime(&epochTime);
-  String tape = getNumberWithZerro(ptm->tm_mday) + F("/") + getNumberWithZerro(ptm->tm_mon + 1);
-  drawString(tape);
+  // Use re-entrant conversion and a fixed buffer to avoid extra String churn.
+  struct tm tmValue;
+  if (gmtime_r(&epochTime, &tmValue) == nullptr) {
+    return;
+  }
+  char tape[6];
+  snprintf(tape, sizeof(tape), "%02d/%02d", tmValue.tm_mday, tmValue.tm_mon + 1);
+  drawString(String(tape));
 }
 
 void printDayToScreen() {
-  String tape = String(getDayOfWeek(timeClient.getDay()));
-  drawString(tape);
+  drawString(String(getDayOfWeek(timeClient.getDay())));
 }
 
 void printCityToScreen() {
@@ -128,6 +139,7 @@ void ntp_init() {
   timeClient.begin();
   getTimezone();
   timeClient.update();
-  LOG_INFO("NTP synchronized, current time: " + timeClient.getFormattedTime());
+  String currentTime = timeClient.getFormattedTime();
+  LOG_INFO_FMT("NTP synchronized, current time: %s", currentTime.c_str());
   printCityToScreen();
 }

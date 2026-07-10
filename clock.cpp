@@ -121,8 +121,7 @@ void Clock::buildDisplaySequence() {
   displaySequence[index++] = &Clock::displayCalendar;
 
   displaySequenceLength = index;
-  LOG_DEBUG("Display sequence built with " + String(displaySequenceLength) +
-            " items");
+  LOG_DEBUG_FMT("Display sequence built with %d items", displaySequenceLength);
 }
 
 // Checks for minute change and switches to time display
@@ -144,7 +143,7 @@ void Clock::checkMinuteChange() {
         executeDisplayAction(); // Immediately show time
         lastChangeTime =
             millis(); // Reset timer so this display stays for full duration
-        LOG_VERBOSE("Minute changed, switched to time display");
+        LOG_VERBOSE_F("Minute changed, switched to time display");
       }
     } else {
       // If already showing time, just update it

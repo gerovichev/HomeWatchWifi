@@ -19,7 +19,6 @@ public:
 private:
   // Using const char* directly to avoid String copies in RAM
   const char *bearerTokenCurrency;
-  const char *bearerTokenCrypto;
   const char *pathCurrencyUSD;
   const char *pathCurrencyEUR;
   const char *pathCryptoBTC;
@@ -40,5 +39,4 @@ private:
 
   // Response parsers
   static float parseCurrencyResponse(const String& payload);
-  static float parseCryptoResponse(const String& payload);
 };

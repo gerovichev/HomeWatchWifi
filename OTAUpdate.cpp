@@ -18,15 +18,16 @@ void update_finished() {
 }
 
 void update_progress(int cur, int total) {
-  int percent = cur / (total / 100);
-  printText(String(percent, DEC) + " %");
-  LOG_VERBOSE("OTA progress: " + String(cur) + "/" + String(total) +
-              " bytes (" + String(percent) + "%)");
+  int percent = (total > 0) ? ((cur * 100) / total) : 0;
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%d %%", percent);
+  printText(String(buf));
+  LOG_VERBOSE_FMT("OTA progress: %d/%d bytes (%d%%)", cur, total, percent);
 }
 
 void update_error(int err) {
-  LOG_ERROR("OTA update fatal error code: " + String(err) + " (" +
-            ESPhttpUpdate.getLastErrorString() + ")");
+  LOG_ERROR_FMT("OTA update fatal error code: %d (%s)",
+                err, ESPhttpUpdate.getLastErrorString().c_str());
 }
 
 // OTA initialization
@@ -37,12 +38,15 @@ void web_ota_init() {
   ESPhttpUpdate.onError(update_error);
   ESPhttpUpdate.setClientTimeout(Timing::OTA_CLIENT_TIMEOUT_MS);
 
-  // Constructing OTA URL - optimize to reduce String allocations
+  // Build OTA URL into a pre-sized buffer — avoids repeated heap allocations
+  // from chaining F() string fragments.
   pathOta.reserve(strlen(webOTA_updateURL) + macAddrSt.length() +
-                  hostname_m.length() + ip.length() + version_prg.length() +
-                  50);
-  pathOta = String(webOTA_updateURL) + F("?MAC=") + macAddrSt + F("&hst=") +
-            hostname_m + F("&ip=") + ip + F("&ver=") + version_prg;
+                  hostname_m.length() + ip.length() + version_prg.length() + 24);
+  char pathBuf[Buffer::PATH_BUFFER_SIZE];
+  snprintf(pathBuf, sizeof(pathBuf), "%s?MAC=%s&hst=%s&ip=%s&ver=%s",
+           webOTA_updateURL, macAddrSt.c_str(), hostname_m.c_str(),
+           ip.c_str(), version_prg.c_str());
+  pathOta = pathBuf;
 }
 
 // Perform OTA update
@@ -50,19 +54,19 @@ void update_ota() {
   BearSSL::WiFiClientSecure client;
   setupSecureClient(client, "OTA server");
 
-  LOG_DEBUG("OTA URL: " + pathOta);
+  LOG_DEBUG_FMT("OTA URL: %s", pathOta.c_str());
 
   // Perform the update and check the result
   t_httpUpdate_return ret = ESPhttpUpdate.update(client, pathOta, version_prg);
 
-  LOG_DEBUG("OTA returned code: " + String(ret));
+  LOG_DEBUG_FMT("OTA returned code: %d", (int)ret);
 
   // Handle update result
   switch (ret) {
   case HTTP_UPDATE_FAILED:
-    LOG_ERROR("OTA update failed: Error " +
-              String(ESPhttpUpdate.getLastError()) + " - " +
-              ESPhttpUpdate.getLastErrorString());
+    LOG_ERROR_FMT("OTA update failed: Error %d - %s",
+                  ESPhttpUpdate.getLastError(),
+                  ESPhttpUpdate.getLastErrorString().c_str());
     break;
 
   case HTTP_UPDATE_NO_UPDATES:

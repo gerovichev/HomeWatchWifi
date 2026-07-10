@@ -13,7 +13,7 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
 - **Environmental Sensors**: DHT22 temperature and humidity sensor support
 - **Location Services**: Automatic location detection via Google Geolocation API
 - **Multi-language Support**: Russian and English interface
-- **Energy Efficient**: WiFi power management and automatic brightness control
+- **Adaptive Brightness**: Day/night intensity based on sunrise and sunset
 - **OTA Updates**: Over-the-air firmware updates
 - **MQTT Integration**: Temperature data publishing to MQTT broker
 - **Multi-device Support**: Configuration for multiple devices via MAC addresses
@@ -51,6 +51,12 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
 - `TimeLib` (for time management)
 - `DHT` (for DHT22 sensor)
 - `Ticker` (for periodic tasks)
+- `WiFiManager` (for AP-based WiFi provisioning)
+- `NTPClient` (for NTP time synchronization)
+- `PubSubClient` (for MQTT)
+- `LittleFS` (included with ESP8266 board package)
+- `ESP8266httpUpdate` (included with ESP8266 board package)
+- `WifiLocation` (for geolocation by nearby WiFi)
 
 ## Setup Instructions
 
@@ -60,7 +66,7 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
    cd HomeWatchWifi
    ```
 
-2. **Configure API Keys**: Create `Secret.cpp` based on `Secret.h` template with your API credentials. Here's an example template:
+2. **Configure API Keys**: Create `Secret.cpp` based on `Secret.h` template with your API credentials. Example:
 
    ```cpp
    #include "Secret.h"
@@ -85,33 +91,19 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
    const char* wifi_name = "AutoConnectAP";
    const char* wifi_pass = "your_wifi_password";
    
-   // Global device configuration map
-   std::map<String, DeviceConfig> configMap;
-   
-   // Function to set device configurations based on MAC address
-   void setDeviceConfig() {
-       // Example device configuration
-       // Replace MAC address with your device's MAC address
-       DeviceConfig config1;
-       config1.lang_weather = "en";              // "en" or "ru"
-       config1.hostname_m = "ESP_Device1";
-       config1.IS_DHT_CONNECTED = true;         // true if DHT22 sensor is connected
-       config1.isWebClientNeeded = false;       // true if web client is needed
-       config1.isReadWeather = true;            // true to fetch weather data
-       config1.humidity_delta = 0.0;             // Humidity correction value
-       config1.intensity = 1;                    // Display intensity (0-15)
-       config1.isOTAreq = true;                  // true to enable OTA updates
-       config1.nameofWatch = "Device Name";     // Name displayed on device
-       config1.isMQTT = false;                   // true to enable MQTT
-       
-       // Add configuration for your device MAC address
-       // Find your MAC address in Serial monitor during first boot
-       configMap["AA:BB:CC:DD:EE:FF"] = config1;
-       
-       // Add more device configurations as needed
-       // DeviceConfig config2;
-       // ... configure settings ...
-       // configMap["11:22:33:44:55:66"] = config2;
+   // Device configurations as a flat array
+   const int DEVICE_CONFIG_COUNT = 1;
+   const DeviceConfigEntry deviceConfigs[] = {
+       {"AA:BB:CC:DD:EE:FF", {"en", "ESP_Device1", true, false, true, 0.0, "Device Name", true, 1, false}}
+   };
+
+   const DeviceConfig* findDeviceConfig(const String& mac) {
+       for (int i = 0; i < DEVICE_CONFIG_COUNT; i++) {
+           if (mac.equalsIgnoreCase(deviceConfigs[i].mac)) {
+               return &deviceConfigs[i].config;
+           }
+       }
+       return nullptr;
    }
    ```
 
@@ -123,7 +115,7 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
 
 3. **Device Configuration**: 
    - Modify device configurations in `Secret.cpp` for your specific devices
-   - Add your device's MAC address and settings to the `setDeviceConfig()` function
+   - Add your device's MAC address and settings to the `deviceConfigs[]` array
    - You can find your device's MAC address in the Serial monitor during first boot
    - See the example above for all available configuration options
 
@@ -146,7 +138,7 @@ A smart watch project based on ESP8266 with Max72xxPanel LED display that shows 
 
 ## Display Cycle
 
-The device cycles through the following information every 5 seconds:
+The device cycles through the following information every 6 seconds (`Timing::CLOCK_INTERVAL_SEC`):
 1. Current time
 2. Date
 3. Day of week
@@ -159,6 +151,7 @@ The device cycles through the following information every 5 seconds:
 10. EUR exchange rate
 11. Home temperature (DHT22)
 12. Home humidity (DHT22)
+13. Next calendar event (if available)
 
 ## Configuration
 
@@ -170,11 +163,12 @@ The project supports multiple device configurations based on MAC addresses. Each
 - OTA update preferences
 - Display intensity
 
-## Power Management
+## Runtime Behavior
 
-- WiFi is automatically disabled after data updates to save power
+- WiFi remains enabled and uses non-blocking reconnect checks in the main loop
+- Data refresh runs every 20 minutes (`Timing::DATA_UPDATE_INTERVAL_SEC`)
 - Display brightness adjusts based on sunrise/sunset times
-- Efficient timer-based operation
+- The loop is watchdog-friendly (`yield()` usage in long operations)
 
 ## Project Structure
 
@@ -190,7 +184,8 @@ HomeWatchWifi/
 ├── dht22_manager.cpp/h    # DHT22 sensor management
 ├── led_display.cpp/h      # LED display functions
 ├── logger.cpp/h           # Logging system
-├── error_handler.cpp/h    # Error handling
+├── calendar_manager.cpp/h # Calendar and event display logic
+├── birthdays.h            # Calendar event data
 ├── device_state.cpp/h     # Device state management
 ├── constants.h            # Centralized constants
 ├── secure_client.h        # SSL client configuration

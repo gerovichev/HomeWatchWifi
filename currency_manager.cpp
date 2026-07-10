@@ -7,7 +7,6 @@
 
 CurrencyManager::CurrencyManager()
     : bearerTokenCurrency(confBearerTokenCurrency),
-      bearerTokenCrypto(confBearerTokenCrypto),
       pathCurrencyUSD(confPathCurrencyUSD),
       pathCurrencyEUR(confPathCurrencyEUR), pathCryptoBTC(confPathCryptoBTC),
       dataUSDValue(0.0), dataEURValue(0.0), dataBTCValue(0.0) {
@@ -69,7 +68,7 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
     }
 
     int maxAttempts = Retry::MAX_ATTEMPTS_CURRENCY;
-    LOG_DEBUG("API path: " + String(path));
+    LOG_DEBUG_FMT("API path: %s", path);
 
     int attempts = 0;
     bool success = false;
@@ -78,7 +77,7 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
     while (attempts < maxAttempts && !success) {
         // Verify WiFi is still connected before each attempt
         if (WiFi.status() != WL_CONNECTED) {
-            LOG_ERROR("WiFi disconnected during fetch (attempt " + String(attempts + 1) + ")");
+            LOG_ERROR_FMT("WiFi disconnected during fetch (attempt %d)", attempts + 1);
             break;
         }
         
@@ -116,28 +115,28 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
             
             if (httpCode == HTTP_CODE_OK) {
                 String payload = http.getString();
-                LOG_VERBOSE("API payload length: " + String(payload.length()));
-                
+                LOG_VERBOSE_FMT("API payload length: %u", payload.length());
+
                 // Use the specific parser callback
                 resultValue = parser(payload);
             } else {
-                // Detailed error information
-                String errorMsg = "HTTP request failed with code: " + String(httpCode, DEC);
                 if (httpCode == -1) {
-                    errorMsg += " (Connection failed - SSL handshake likely failed)";
-                    LOG_DEBUG("WiFi status: " + String(WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected"));
+                    LOG_WARNING_FMT("HTTP request failed (code %d): connection failed - SSL handshake likely failed", httpCode);
+                    LOG_DEBUG_FMT("WiFi status: %s", WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
                 } else if (httpCode < 0) {
-                    errorMsg += " (HTTP client error)";
+                    LOG_WARNING_FMT("HTTP request failed (code %d): HTTP client error", httpCode);
                 } else if (httpCode >= 400 && httpCode < 500) {
-                    errorMsg += " (Client error - check authentication/authorization)";
+                    LOG_WARNING_FMT("HTTP request failed (code %d): client error - check auth", httpCode);
                     String errorBody = http.getString();
                     if (errorBody.length() > 0) {
-                        LOG_DEBUG("Error response body: " + errorBody.substring(0, min(200, (int)errorBody.length())));
+                        LOG_DEBUG_FMT("Error response body: %s",
+                                      errorBody.substring(0, min(200, (int)errorBody.length())).c_str());
                     }
                 } else if (httpCode >= 500) {
-                    errorMsg += " (Server error)";
+                    LOG_WARNING_FMT("HTTP request failed (code %d): server error", httpCode);
+                } else {
+                    LOG_WARNING_FMT("HTTP request failed (code %d)", httpCode);
                 }
-                LOG_WARNING(errorMsg);
             }
             
             http.end();
@@ -177,30 +176,10 @@ float CurrencyManager::parseCurrencyResponse(const String& payload) {
     StaticJsonDocument<Buffer::JSON_CURRENCY_SIZE> doc;
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
-        LOG_ERROR("deserializeJson() failed: " + String(error.c_str()));
+        LOG_ERROR_FMT("parseCurrencyResponse: deserializeJson() failed: %s", error.c_str());
         return 0.0;
     }
     return doc[F("state")];
-}
-
-// Parse CoinCap crypto response: {"timestamp":..., "data":["87214.89"]}
-float CurrencyManager::parseCryptoResponse(const String& payload) {
-    StaticJsonDocument<Buffer::JSON_CURRENCY_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, payload);
-    if (error) {
-        LOG_ERROR("deserializeJson() failed: " + String(error.c_str()));
-        return 0.0;
-    }
-
-    if (doc.containsKey(F("data")) && doc[F("data")].is<JsonArray>()) {
-        JsonArray dataArray = doc[F("data")].as<JsonArray>();
-        if (dataArray.size() > 0) {
-            return dataArray[0].as<float>();
-        }
-    }
-    
-    LOG_ERROR_F("Failed to parse price from response");
-    return 0.0;
 }
 
 // Convenience wrappers that use the unified fetchWithRetry
@@ -211,5 +190,5 @@ float CurrencyManager::readCurrency(const char* path) {
 
 float CurrencyManager::readCrypto(const char* path) {
     LOG_DEBUG_F("Fetching crypto data...");
-    return fetchWithRetry(path, bearerTokenCrypto, parseCryptoResponse);
+    return fetchWithRetry(path, bearerTokenCurrency, parseCurrencyResponse);
 }

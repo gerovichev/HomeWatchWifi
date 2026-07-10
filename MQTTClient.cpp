@@ -9,35 +9,51 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void reconnect() {
-  int attemptCount = 0;
-  const int maxAttempts = Retry::MAX_ATTEMPTS_MQTT;
+namespace {
+unsigned long lastMqttReconnectAttemptMs = 0;
+int mqttReconnectFailures = 0;
+}
 
-  while (!client.connected() && attemptCount < maxAttempts) {
-    LOG_DEBUG("Attempting MQTT connection (attempt " + String(attemptCount + 1) + "/" + String(maxAttempts) + ")...");
-    if (client.connect(hostname_m.c_str(), mqtt_user, mqtt_password)) {
-      LOG_INFO("MQTT connected successfully");
-      return;
-    } else {
-      LOG_WARNING("MQTT connection failed, rc=" + String(client.state()) + ", retrying...");
-      delay(Timing::MQTT_RECONNECT_DELAY_MS);
-      attemptCount++;
-    }
+void reconnect() {
+  if (client.connected()) {
+    mqttReconnectFailures = 0;
+    return;
   }
 
-  if (attemptCount >= maxAttempts) {
-    LOG_ERROR_F("Max MQTT connection attempts reached. Could not connect to broker.");
+  const unsigned long now = millis();
+  if (now - lastMqttReconnectAttemptMs < Timing::MQTT_RECONNECT_DELAY_MS) {
+    return;
+  }
+  lastMqttReconnectAttemptMs = now;
+
+  LOG_DEBUG_F("Attempting MQTT connection...");
+  if (client.connect(hostname_m.c_str(), mqtt_user, mqtt_password)) {
+    mqttReconnectFailures = 0;
+    LOG_INFO_F("MQTT connected successfully");
+    return;
+  }
+
+  mqttReconnectFailures++;
+  LOG_WARNING_FMT("MQTT connection failed, rc=%d", client.state());
+  if (mqttReconnectFailures >= Retry::MAX_ATTEMPTS_MQTT) {
+    LOG_ERROR_F("Max MQTT reconnection attempts reached; will continue retrying with backoff");
+    mqttReconnectFailures = 0;
   }
 }
 
 
 void setup_mqtt() {
-  LOG_INFO("MQTT broker: " + String(mqtt_server) + ":1883");
+  LOG_INFO_FMT("MQTT broker: %s:1883", mqtt_server);
   client.setServer(mqtt_server, 1883);
-  LOG_INFO("MQTT topic: " + mqtt_topic_str);
+  LOG_INFO_FMT("MQTT topic: %s", mqtt_topic_str.c_str());
 }
 
 void publish_temperature() {
+  if (!client.connected()) {
+    LOG_DEBUG_F("Skipping MQTT publish: broker is disconnected");
+    return;
+  }
+
   Dht22_manager& dht22_manager = Clock::getInstance().getDht22();
   float temperature = dht22_manager.getHomeTemp();
   
@@ -46,13 +62,13 @@ void publish_temperature() {
     return;
   }
 
-  LOG_DEBUG("Publishing temperature: " + String(temperature, 2) + "°C");
+  LOG_DEBUG_FMT("Publishing temperature: %.2f C", temperature);
 
   char tempString[Buffer::TEMP_STRING_SIZE];
   dtostrf(temperature, 1, 2, tempString);
   
   if (client.publish(mqtt_topic_str.c_str(), tempString)) {
-    LOG_VERBOSE("Temperature published to MQTT successfully");
+    LOG_VERBOSE_F("Temperature published to MQTT successfully");
   } else {
     LOG_WARNING_F("Failed to publish temperature to MQTT");
   }

@@ -50,6 +50,22 @@ void Logger::log(LogLevel level, const String& message) {
     Serial.println(message);
 }
 
+void Logger::log(LogLevel level, const __FlashStringHelper* message) {
+    if (!isInitialized || !Serial || level > logLevel) {
+        return;
+    }
+
+    unsigned long timestamp = millis();
+    char timeStr[12];
+    sprintf(timeStr, "%10lu", timestamp);
+
+    Serial.print(timeStr);
+    Serial.print(" ");
+    Serial.print(getLevelString(level));
+    Serial.print(" ");
+    Serial.println(message);
+}
+
 void Logger::error(const String& message) {
     log(LOG_LEVEL_ERROR, message);
 }
@@ -71,23 +87,23 @@ void Logger::verbose(const String& message) {
 }
 
 void Logger::error(const __FlashStringHelper* message) {
-    error(String(message));
+    log(LOG_LEVEL_ERROR, message);
 }
 
 void Logger::warning(const __FlashStringHelper* message) {
-    warning(String(message));
+    log(LOG_LEVEL_WARNING, message);
 }
 
 void Logger::info(const __FlashStringHelper* message) {
-    info(String(message));
+    log(LOG_LEVEL_INFO, message);
 }
 
 void Logger::debug(const __FlashStringHelper* message) {
-    debug(String(message));
+    log(LOG_LEVEL_DEBUG, message);
 }
 
 void Logger::verbose(const __FlashStringHelper* message) {
-    verbose(String(message));
+    log(LOG_LEVEL_VERBOSE, message);
 }
 
 void Logger::logf(LogLevel level, const char* format, ...) {
