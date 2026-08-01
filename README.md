@@ -192,6 +192,7 @@ HomeWatchWifi/
 ├── WiFiSetup.cpp/h        # WiFi setup
 ├── OTAUpdate.cpp/h        # OTA updates
 ├── MQTTClient.cpp/h       # MQTT client
+├── root_certs.cpp/h       # Pinned root CA certificates for TLS validation
 └── fonts.h                # Font definitions
 ```
 

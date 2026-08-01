@@ -8,7 +8,7 @@ String lang_weather;
 unsigned long sunrise;
 unsigned long sunset;
 
-String version_prg = "260710";
+String version_prg = "260801";
 char grad = '\x60';
 
 float humidity_delta = 0.00;

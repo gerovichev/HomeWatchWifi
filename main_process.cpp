@@ -20,7 +20,7 @@ void IRAM_ATTR runAllUpdates() { isRunWeather = true; }
 // Setup function, called once at startup
 void setup() {
   Logger::getInstance().begin(115200);
-  Logger::getInstance().setLogLevel(LOG_LEVEL_DEBUG); // Set desired log level
+  Logger::getInstance().setLogLevel(LOG_LEVEL_NONE); // Set desired log level
 
   LOG_INFO_F("Starting HomeWatchWifi...");
   LOG_INFO_FMT("Version: %s", version_prg.c_str());
