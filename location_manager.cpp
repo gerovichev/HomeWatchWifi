@@ -1,12 +1,30 @@
 #include "location_manager.h"
 #include "constants.h"
 #include "logger.h"
-#include "secure_client.h"
 #include <ArduinoJson.h>
 #include <ESP8266HTTPClient.h>
 #include <LittleFS.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <WifiLocation.h>
+
+// Root CA for api.ipify.org. Its certificate is issued by Google Trust
+// Services and currently chains up to this self-signed root (valid until
+// 2036), so pinning it here survives normal leaf/intermediate renewal.
+static const char IPIFY_ROOT_CA[] PROGMEM = R"CERT(
+-----BEGIN CERTIFICATE-----
+MIICCTCCAY6gAwIBAgINAgPlwGjvYxqccpBQUjAKBggqhkjOPQQDAzBHMQswCQYD
+VQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzEUMBIG
+A1UEAxMLR1RTIFJvb3QgUjQwHhcNMTYwNjIyMDAwMDAwWhcNMzYwNjIyMDAwMDAw
+WjBHMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2Vz
+IExMQzEUMBIGA1UEAxMLR1RTIFJvb3QgUjQwdjAQBgcqhkjOPQIBBgUrgQQAIgNi
+AATzdHOnaItgrkO4NcWBMHtLSZ37wWHO5t5GvWvVYRg1rkDdc/eJkTBa6zzuhXyi
+QHY7qca4R9gq55KRanPpsXI5nymfopjTX15YhmUPoYRlBtHci8nHc8iMai/lxKvR
+HYqjQjBAMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
+BBSATNbrdP9JNqPV2Py1PsVq8JQdjDAKBggqhkjOPQQDAwNpADBmAjEA6ED/g94D
+9J+uHXqnLrmvT/aDHQ4thQEd0dlq7A/Cr8deVl5c1RxYIigL9zC2L7F8AjEA8GE8
+p/SgguMh1YQdc4acLa/KNJvxn7kjNuK8YAOdgLOaVsjh4rsUecrNIdSUtUlD
+-----END CERTIFICATE-----
+)CERT";
 
 // Define global variables
 String ip;
@@ -133,9 +151,14 @@ void getLocationAPI(const String &ip) {
 String getIp() {
   LOG_INFO_F("Fetching external IP address...");
 
+  // BearSSL needs a real system clock to validate the certificate's
+  // notBefore/notAfter dates; this is a no-op once NTP has already synced.
+  setClock();
+
   String payload;
   BearSSL::WiFiClientSecure client;
-  setupSecureClient(client, "ipify.org");
+  BearSSL::X509List rootCA(IPIFY_ROOT_CA);
+  client.setTrustAnchors(&rootCA);
   HTTPClient http;
 
   String path = "https://api.ipify.org";

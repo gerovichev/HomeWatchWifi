@@ -188,7 +188,6 @@ HomeWatchWifi/
 ├── birthdays.h            # Calendar event data
 ├── device_state.cpp/h     # Device state management
 ├── constants.h            # Centralized constants
-├── secure_client.h        # SSL client configuration
 ├── global_config.cpp/h    # Global configuration
 ├── WiFiSetup.cpp/h        # WiFi setup
 ├── OTAUpdate.cpp/h        # OTA updates
