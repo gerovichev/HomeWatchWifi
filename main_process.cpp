@@ -20,10 +20,12 @@ void IRAM_ATTR runAllUpdates() { isRunWeather = true; }
 // Setup function, called once at startup
 void setup() {
   Logger::getInstance().begin(115200);
-  Logger::getInstance().setLogLevel(LOG_LEVEL_NONE); // Set desired log level
+  Logger::getInstance().setLogLevel(LOG_LEVEL_NONE); // Set desired log level   LOG_LEVEL_INFO  // LOG_LEVEL_NONE
 
   LOG_INFO_F("Starting HomeWatchWifi...");
   LOG_INFO_FMT("Version: %s", version_prg.c_str());
+  LOG_INFO_FMT("Reset reason: %s", ESP.getResetReason().c_str());
+  LOG_INFO_FMT("Reset info: %s", ESP.getResetInfo().c_str());
 
   initPerDevice();
   matrixSetup();
@@ -148,6 +150,14 @@ void fetchWeatherAndCurrency() {
 
       LOG_DEBUG_F("Adjusting display intensity...");
       setIntensityByTime(timeNow); // Adjust display intensity based on time
+
+      // Fragmentation matters more than raw free space on ESP8266: a falling
+      // max-free-block while total free stays flat is what precedes an
+      // allocation failure.
+      uint32_t freeHeap = ESP.getFreeHeap();
+      uint16_t maxBlock = ESP.getMaxFreeBlockSize();
+      LOG_INFO_FMT("Heap: %u free, %u largest block, %u%% fragmentation",
+                   freeHeap, maxBlock, ESP.getHeapFragmentation());
 
       LOG_INFO_F("Data update cycle completed successfully");
     } else {

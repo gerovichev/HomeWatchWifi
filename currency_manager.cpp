@@ -6,6 +6,21 @@
 #include "location_manager.h"
 #include "root_certs.h"
 
+// TLS session cache, shared across all three fetches.
+//
+// The TLS handshake runs BearSSL's RSA modular exponentiation
+// (br_i15_montymul), several seconds of pure computation that never yields.
+// At 80 MHz that lands right on the 3.2 s soft-watchdog limit, which is what
+// reset the device mid-cycle: a stack dump showed epc1 parked inside
+// br_i15_montymul with the heap still healthy (29 KB free, 25 KB largest
+// block) — a hang, not an allocation failure.
+//
+// USD, EUR and BTC all resolve to the same host, so caching the session lets
+// fetches 2 and 3 resume and skip the key exchange entirely, removing two of
+// the three stalls. If an endpoint ever moves to a different host the ticket
+// is simply rejected and a full handshake happens — correct, just not faster.
+static BearSSL::Session tlsSession;
+
 CurrencyManager::CurrencyManager()
     : bearerTokenCurrency(confBearerTokenCurrency),
       pathCurrencyUSD(confPathCurrencyUSD),
@@ -75,6 +90,7 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
     // notBefore/notAfter dates; this is a no-op once NTP has already synced.
     setClock();
 
+
     int attempts = 0;
     bool success = false;
     float resultValue = 0.0;
@@ -89,10 +105,18 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
         yield(); // Allow system tasks before creating client
         
         // Create fresh client for each attempt to avoid BearSSL reuse issues
-        BearSSL::WiFiClientSecure client;
+        // rootCA is declared before client so that client is destroyed first —
+        // the client must never outlive the trust anchors it points at.
         BearSSL::X509List rootCA(ISRG_ROOT_X1);
+        BearSSL::WiFiClientSecure client;
         client.setTrustAnchors(&rootCA);
+        client.setBufferSizes(Buffer::TLS_RX_SIZE, Buffer::TLS_TX_SIZE);
+        client.setSession(&tlsSession); // Resume instead of re-running the RSA handshake
         HTTPClient http;
+
+        LOG_INFO_FMT("Pre-connect heap: %u free, %u largest block, %u%% frag",
+                     ESP.getFreeHeap(), ESP.getMaxFreeBlockSize(),
+                     ESP.getHeapFragmentation());
         http.setTimeout(Timing::HTTP_TIMEOUT_CURRENCY_MS);
         
         // Add reconnect delay for retries
@@ -112,7 +136,14 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
             LOG_DEBUG_F("HTTP connection started, sending GET request...");
             yield(); // Allow system tasks before sending request
             
-            // Perform HTTP GET
+            // Do NOT wrap this in ESP.wdtDisable()/wdtEnable(). It is tempting,
+            // because when the session cannot be resumed this runs a full TLS
+            // handshake whose RSA math can overrun the 3.2 s soft watchdog. But
+            // this call is connect + handshake + response wait, which on a slow
+            // server exceeds the ~6 s the core allows the soft WDT to be off —
+            // and then the hardware watchdog fires instead, with no exception
+            // dump. Keep the soft WDT armed; 160 MHz and session resumption are
+            // what actually shorten the handshake.
             unsigned long startTime = millis();
             int httpCode = http.GET();
             unsigned long elapsed = millis() - startTime;
@@ -127,7 +158,14 @@ float CurrencyManager::fetchWithRetry(const char* path, const char* token, Respo
                 resultValue = parser(payload);
             } else {
                 if (httpCode == -1) {
-                    LOG_WARNING_FMT("HTTP request failed (code %d): connection failed - SSL handshake likely failed", httpCode);
+                    // Ask BearSSL why it actually failed instead of guessing:
+                    // distinguishes "out of memory" from a real validation error.
+                    char sslErr[80] = {0};
+                    int sslCode = client.getLastSSLError(sslErr, sizeof(sslErr));
+                    LOG_WARNING_FMT("HTTP request failed (code %d): SSL error %d (%s)",
+                                    httpCode, sslCode, sslErr);
+                    LOG_WARNING_FMT("Heap at failure: %u free, %u largest block",
+                                    ESP.getFreeHeap(), ESP.getMaxFreeBlockSize());
                     LOG_DEBUG_FMT("WiFi status: %s", WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
                 } else if (httpCode < 0) {
                     LOG_WARNING_FMT("HTTP request failed (code %d): HTTP client error", httpCode);

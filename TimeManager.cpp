@@ -33,9 +33,12 @@ void getTimezone() {
   // notBefore/notAfter dates; this is a no-op once NTP has already synced.
   setClock();
 
-  BearSSL::WiFiClientSecure client;
+  // rootCA is declared before client so that client is destroyed first — the
+  // client must never outlive the trust anchors it points at.
   BearSSL::X509List rootCA(ISRG_ROOT_X1);
+  BearSSL::WiFiClientSecure client;
   client.setTrustAnchors(&rootCA);
+  client.setBufferSizes(Buffer::TLS_RX_SIZE, Buffer::TLS_TX_SIZE);
   HTTPClient http;
 
   // Optimize URL construction to avoid multiple String concatenations
@@ -52,6 +55,8 @@ void getTimezone() {
   while (attempts < maxAttemptsTimes && !success) {
     if (http.begin(client, path)) {
       LOG_DEBUG_FMT("Timezone API attempt %d/%d", attempts + 1, maxAttemptsTimes);
+      // No session cache here: this runs only at DST boundaries, so any ticket
+      // would always be long expired by the time it was needed.
       int httpCode = http.GET();  // Send the request
 
       if (httpCode == HTTP_CODE_OK) {

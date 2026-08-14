@@ -45,6 +45,21 @@ namespace Buffer {
     constexpr size_t PATH_BUFFER_SIZE = 512;
     constexpr size_t TIME_STRING_SIZE = 20;
     constexpr size_t TEMP_STRING_SIZE = 8;
+
+    // BearSSL TLS record buffers.
+    //
+    // The default is 16 KB receive, which alone is over half the free heap.
+    // _connectSSL() takes that buffer, then a ~3.4 KB br_x509_minimal_context,
+    // then the parsed trust anchor — ~21 KB in one go, which is what threw
+    // "Unhandled C++ exception: OOM" from operator new.
+    //
+    // 4 KB holds every response this firmware fetches (ipify ~15 B, currency
+    // ~200 B, weather ~1 KB) with room for a normal 2-3 certificate chain in
+    // the handshake. If a server ever sends a TLS record larger than this the
+    // connection simply fails and is retried — it does not crash — so if
+    // handshakes start failing against one host, raise this to 8192 first.
+    constexpr int TLS_RX_SIZE = 4096;
+    constexpr int TLS_TX_SIZE = 512;
 }
 
 // Sensor constants

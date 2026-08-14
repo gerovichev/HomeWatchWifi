@@ -126,6 +126,9 @@ void getLocationAPI(const String &ip) {
 
   setClock();
 
+  // This does a blocking WiFi scan and then a TLS handshake inside the library,
+  // so it is the longest single stall in the cycle — but it only runs when the
+  // external IP changes. 160 MHz is what keeps it under the watchdog.
   WifiLocation location(googleApiKey);
   location_t loc = location.getGeoFromWiFi();
   String status = location.wlStatusStr(location.getStatus());
@@ -140,7 +143,14 @@ void getLocationAPI(const String &ip) {
 
   LOG_INFO_FMT("Location updated: lat=%.7f, lon=%.7f", latitude, longitude);
   LOG_DEBUG_FMT("Location accuracy: %u meters", loc.accuracy);
-  LOG_VERBOSE_FMT("WiFi scan data: %s", location.getSurroundingWiFiJson().c_str());
+  // Guarded explicitly: LOG_*_FMT arguments are evaluated at the call site even
+  // when the level is disabled, and getSurroundingWiFiJson() is not a getter —
+  // it runs a second blocking WiFi.scanNetworks() and builds a multi-KB String.
+  // Unguarded, that cost was paid on every location fetch at LOG_LEVEL_NONE.
+  if (Logger::getInstance().getLogLevel() >= LOG_LEVEL_VERBOSE) {
+    LOG_VERBOSE_FMT("WiFi scan data: %s",
+                    location.getSurroundingWiFiJson().c_str());
+  }
 
   config.latitude = latitude;
   config.longitude = longitude;
@@ -156,9 +166,12 @@ String getIp() {
   setClock();
 
   String payload;
-  BearSSL::WiFiClientSecure client;
+  // rootCA is declared before client so that client is destroyed first — the
+  // client must never outlive the trust anchors it points at.
   BearSSL::X509List rootCA(IPIFY_ROOT_CA);
+  BearSSL::WiFiClientSecure client;
   client.setTrustAnchors(&rootCA);
+  client.setBufferSizes(Buffer::TLS_RX_SIZE, Buffer::TLS_TX_SIZE);
   HTTPClient http;
 
   String path = "https://api.ipify.org";
@@ -168,6 +181,8 @@ String getIp() {
   while (attempts < maxAttemptsLoc && !success) {
     if (http.begin(client, path)) {
       LOG_DEBUG_FMT("IP retrieval attempt %d/%d", attempts + 1, maxAttemptsLoc);
+      // No session cache here: this runs hourly, far enough apart that the
+      // ticket has usually expired, and it is a single request per pass.
       int httpCode = http.GET(); // Send the request
 
       if (httpCode == HTTP_CODE_OK) {
@@ -214,8 +229,13 @@ String getIp() {
 void location_init() {
   LOG_INFO_F("Initializing location services...");
 
-  ip = getIp();
+  // Load the cached location BEFORE getIp(): getIp() reads config.latitude to
+  // decide whether a failed IP lookup is fatal, and `config` is a zero-init
+  // global. With the old order that check always saw 0 on the first call of a
+  // boot, so a transient ipify failure rebooted the device even though a
+  // perfectly good cached location was sitting in LittleFS.
   loadConfiguration();
+  ip = getIp();
 
   if (ip.equals(config.ip) && config.latitude != 0) {
     latitude = config.latitude;

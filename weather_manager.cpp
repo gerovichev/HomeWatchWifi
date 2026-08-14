@@ -48,6 +48,11 @@ jjxDah2nGN59PRbxYvnKkKj9
 -----END CERTIFICATE-----
 )CERT";
 
+// TLS session cache for api.openweathermap.org. Resuming skips the RSA
+// handshake, which is multiple seconds of un-yieldable math at 80 MHz and the
+// main reason the update cycle used to trip the watchdog.
+static BearSSL::Session tlsSession;
+
 WeatherManager::WeatherManager()
 {
     // Initialize weather data members here, if necessary
@@ -69,9 +74,16 @@ void WeatherManager::readWeather() {
   // notBefore/notAfter dates; this is a no-op once NTP has already synced.
   setClock();
 
-  BearSSL::WiFiClientSecure client;
+  // rootCA is declared before client so that client is destroyed first — the
+  // client must never outlive the trust anchors it points at.
   BearSSL::X509List rootCA(OPENWEATHERMAP_ROOT_CA);
+  BearSSL::WiFiClientSecure client;
   client.setTrustAnchors(&rootCA);
+  client.setBufferSizes(Buffer::TLS_RX_SIZE, Buffer::TLS_TX_SIZE);
+  // Same host every cycle, so a cached session lets most fetches resume and
+  // skip the multi-second RSA handshake entirely. Falls back to a full
+  // handshake once the server expires the ticket.
+  client.setSession(&tlsSession);
   LOG_DEBUG_F("Weather client configured with certificate validation (OpenWeatherMap root CA)");
   HTTPClient http;
   http.setTimeout(Timing::HTTP_TIMEOUT_MS);
@@ -96,7 +108,10 @@ void WeatherManager::readWeather() {
         String payload = http.getString();  // Get the request response payload
         LOG_VERBOSE_FMT("Weather API response: %s", payload.c_str());
 
-        StaticJsonDocument<Buffer::JSON_WEATHER_SIZE> doc;  // Weather API response with current weather data
+        // Heap-allocated rather than Static (stack): this is the largest JSON
+        // buffer in the firmware and it is parsed several frames deep inside
+        // the TLS/HTTP call chain, where the ESP8266's ~4 KB stack is tight.
+        DynamicJsonDocument doc(Buffer::JSON_WEATHER_SIZE);
         DeserializationError error = deserializeJson(doc, payload);
 
         // Test if parsing succeeds

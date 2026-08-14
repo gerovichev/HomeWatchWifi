@@ -64,9 +64,11 @@ void publish_temperature() {
 
   LOG_DEBUG_FMT("Publishing temperature: %.2f C", temperature);
 
+  // snprintf bounds-checks and truncates; dtostrf does not and will write past
+  // the end of the buffer for unexpectedly large/garbled sensor values.
   char tempString[Buffer::TEMP_STRING_SIZE];
-  dtostrf(temperature, 1, 2, tempString);
-  
+  snprintf(tempString, sizeof(tempString), "%.2f", temperature);
+
   if (client.publish(mqtt_topic_str.c_str(), tempString)) {
     LOG_VERBOSE_F("Temperature published to MQTT successfully");
   } else {

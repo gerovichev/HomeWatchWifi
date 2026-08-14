@@ -57,13 +57,25 @@ void update_ota() {
   // notBefore/notAfter dates; this is a no-op once NTP has already synced.
   setClock();
 
-  BearSSL::WiFiClientSecure client;
+  // rootCA is declared before client so that client is destroyed first — the
+  // client must never outlive the trust anchors it points at.
   BearSSL::X509List rootCA(ISRG_ROOT_X1);
+  BearSSL::WiFiClientSecure client;
   client.setTrustAnchors(&rootCA);
+  // Left at the default 16 KB receive buffer, unlike the other TLS clients
+  // here. This runs first in the update cycle when the heap is least
+  // fragmented, so it is the least likely place to hit OOM, and it is the one
+  // path where an induced failure is expensive. If OTA is ever implicated in
+  // an allocation failure, apply Buffer::TLS_RX_SIZE here too — a short read
+  // aborts the update before anything is committed to flash.
 
   LOG_DEBUG_FMT("OTA URL: %s", pathOta.c_str());
 
-  // Perform the update and check the result
+  // Exposed to the same multi-second RSA handshake as every other TLS site
+  // here, and it cannot be isolated from the firmware download that follows.
+  // Never disable the watchdog around this: the download runs for tens of
+  // seconds while writing flash, and an unguarded flash write is a far worse
+  // failure than a reset. 160 MHz is what covers this path.
   t_httpUpdate_return ret = ESPhttpUpdate.update(client, pathOta, version_prg);
 
   LOG_DEBUG_FMT("OTA returned code: %d", (int)ret);
